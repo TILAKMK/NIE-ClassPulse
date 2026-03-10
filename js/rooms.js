@@ -3,7 +3,7 @@
 // ============================================================
 import { supabase } from './supabase.js';
 
-// ── Fetch ALL classrooms (with current status) ───────────────
+// ── Fetch ALL classrooms ─────────────────────────────────────
 export async function getAllRooms() {
   const { data, error } = await supabase
     .from('classrooms')
@@ -24,52 +24,59 @@ export async function getRoomById(id) {
   return data;
 }
 
-// ── Search by room number or building ────────────────────────
+// ── Search by room number, building, dept, section ───────────
 export async function searchRooms(query) {
   const { data, error } = await supabase
     .from('classrooms')
     .select('*')
-    .or(`room_number.ilike.%${query}%,building.ilike.%${query}%,department.ilike.%${query}%`);
+    .or(
+      `room_number.ilike.%${query}%,` +
+      `building.ilike.%${query}%,` +
+      `department.ilike.%${query}%,` +
+      `section.ilike.%${query}%`
+    );
   if (error) throw error;
   return data;
 }
 
 // ── Filter rooms ─────────────────────────────────────────────
 export async function filterRooms({ building, department, status }) {
-  let query = supabase.from('classrooms').select('*');
-  if (building   && building   !== 'all') query = query.eq('building', building);
-  if (department && department !== 'all') query = query.eq('department', department);
-  if (status     && status     !== 'all') query = query.eq('status', status);
-  const { data, error } = await query.order('room_number');
+  let q = supabase.from('classrooms').select('*');
+  if (building   && building   !== 'all') q = q.eq('building', building);
+  if (department && department !== 'all') q = q.eq('department', department);
+  if (status     && status     !== 'all') q = q.eq('status', status);
+  const { data, error } = await q.order('room_number');
   if (error) throw error;
   return data;
 }
 
-// ── Dashboard counts ─────────────────────────────────────────
+// ── Dashboard stat counts ────────────────────────────────────
 export async function getRoomStats() {
-  const { data, error } = await supabase.from('classrooms').select('status');
+  const { data, error } = await supabase
+    .from('classrooms')
+    .select('status');
   if (error) throw error;
-  const total    = data.length;
-  const vacant   = data.filter(r => r.status === 'vacant').length;
-  const occupied = data.filter(r => r.status === 'occupied').length;
-  const freeSoon = data.filter(r => r.status === 'free_soon').length;
-  return { total, vacant, occupied, freeSoon };
+  return {
+    total:    data.length,
+    vacant:   data.filter(r => r.status === 'vacant').length,
+    occupied: data.filter(r => r.status === 'occupied').length,
+    freeSoon: data.filter(r => r.status === 'free_soon').length,
+  };
 }
 
 // ── Update room status (teacher / CR only) ───────────────────
 export async function updateRoomStatus(roomId, status, sessionInfo = null) {
   const updates = { status, updated_at: new Date().toISOString() };
-  if (sessionInfo) {
-    updates.current_subject  = sessionInfo.subject  || null;
-    updates.current_faculty  = sessionInfo.faculty  || null;
-    updates.session_start    = sessionInfo.start    || null;
-    updates.session_end      = sessionInfo.end      || null;
+  if (sessionInfo && status === 'occupied') {
+    updates.current_subject = sessionInfo.subject || null;
+    updates.current_faculty = sessionInfo.faculty || null;
+    updates.session_start   = sessionInfo.start   || null;
+    updates.session_end     = sessionInfo.end      || null;
   } else {
-    // Clearing a room
-    updates.current_subject  = null;
-    updates.current_faculty  = null;
-    updates.session_start    = null;
-    updates.session_end      = null;
+    updates.current_subject = null;
+    updates.current_faculty = null;
+    updates.session_start   = null;
+    updates.session_end     = null;
   }
   const { data, error } = await supabase
     .from('classrooms')
@@ -81,8 +88,7 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
   return data;
 }
 
-// ── Subscribe to real-time status changes ────────────────────
-//    callback receives the updated row
+// ── Real-time: fires callback whenever any classroom updates ─
 export function subscribeToRoomChanges(callback) {
   return supabase
     .channel('classrooms-realtime')
@@ -94,9 +100,9 @@ export function subscribeToRoomChanges(callback) {
     .subscribe();
 }
 
-// ── Get today's schedule for a room ──────────────────────────
+// ── Today's schedule for a specific room ─────────────────────
 export async function getRoomSchedule(roomId) {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }); // e.g. "Monday"
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const { data, error } = await supabase
     .from('schedules')
     .select('*')

@@ -6,68 +6,49 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
-  <script id="tailwind-config">
+  <script>
     tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "primary": "#137fec",
-            "background-light": "#f6f7f8",
-            "background-dark": "#101922",
-          },
-          fontFamily: { "display": ["Lexend"] },
-          borderRadius: {"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},
-        },
-      },
+      darkMode:"class",
+      theme:{ extend:{
+        colors:{"primary":"#137fec","background-light":"#f6f7f8","background-dark":"#101922"},
+        fontFamily:{"display":["Lexend"]},
+        borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},
+      }},
     }
   </script>
-  <title>NIE ClassPulse - Classroom Availability</title>
+  <title>NIE ClassPulse — Classroom Availability</title>
   <style>
-    body { min-height: 100dvh; }
-    .loader {
-      width: 40px; height: 40px;
-      border: 4px solid #e2e8f0;
-      border-top-color: #137fec;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    body{min-height:100dvh;}
+    .loader{width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#137fec;border-radius:50%;animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
 
-<!-- ── Top Navigation ─────────────────────────────────────── -->
+<!-- Nav -->
 <header class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
-
-      <!-- Logo -->
       <div class="flex items-center gap-3">
         <div class="bg-primary p-1.5 rounded-lg text-white">
           <span class="material-symbols-outlined block">pulse_alert</span>
         </div>
-        <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">NIE ClassPulse</h1>
+        <h1 class="text-xl font-bold tracking-tight">NIE ClassPulse</h1>
       </div>
-
-      <!-- Desktop Nav -->
-      <div class="hidden md:flex items-center gap-6">
-        <nav class="flex gap-4">
-          <a class="text-primary font-medium px-3 py-2 rounded-lg bg-primary/10" href="#">Dashboard</a>
-          <a class="text-slate-600 dark:text-slate-400 hover:text-primary px-3 py-2 transition-colors" href="#">Buildings</a>
-          <a class="text-slate-600 dark:text-slate-400 hover:text-primary px-3 py-2 transition-colors" href="#">Schedules</a>
-        </nav>
-        <div class="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
-
-        <!-- Auth area -->
+      <div class="hidden md:flex items-center gap-4">
+        <a href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit"
+           target="_blank"
+           class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-primary px-3 py-2 rounded-lg transition-colors text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary">
+          <span class="material-symbols-outlined text-base">table_chart</span>
+          NIE Pulse Sheet
+        </a>
+        <div class="h-8 w-px bg-slate-200 dark:bg-slate-700"></div>
         <span id="user-greeting" class="text-sm text-slate-500 dark:text-slate-400"></span>
-        <a id="auth-btn"
-           href="/pages/login.html"
+        <a id="auth-btn" href="/pages/login.html"
            class="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
           Login
         </a>
       </div>
-
       <button class="md:hidden text-slate-600 dark:text-slate-300">
         <span class="material-symbols-outlined">menu</span>
       </button>
@@ -75,10 +56,9 @@
   </div>
 </header>
 
-<!-- ── Main Content ───────────────────────────────────────── -->
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24">
 
-  <!-- Search Section -->
+  <!-- Search + Filters -->
   <div class="mb-8">
     <h2 class="text-2xl font-bold mb-6">Find an Available Classroom</h2>
     <div class="flex flex-col md:flex-row gap-4">
@@ -88,38 +68,23 @@
         </div>
         <input id="search-input"
                class="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-base transition-all"
-               placeholder="Search by room number, building, or department…"
-               type="text"/>
+               placeholder="Search by room number…" type="text"/>
       </div>
       <button id="search-btn"
               class="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined">filter_list</span>
-        Search
+        <span class="material-symbols-outlined">search</span>Search
       </button>
     </div>
-
-    <!-- Filters -->
+    <!-- Only Building + Status filters -->
     <div class="flex flex-wrap gap-3 mt-4">
       <select id="filter-building"
-              class="px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary">
-        <option value="all"> Building: All</option>
-        <option value="North Campus">North Campus</option>
-        <option value="Main Block">Main Block</option>
-        <option value="Workshop Block">Workshop Block</option>
+              class="px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+        <option value="all">🏢 Building: All</option>
+        <option value="Ramanujacharya Block">Ramanujacharya Block</option>
+        <option value="Madhwacharya Block">Madhwacharya Block (MB)</option>
       </select>
-
-      <select id="filter-dept"
-              class="px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary">
-        <option value="all">Department: All</option>
-        <option value="CSE">CSE</option>
-        <option value="IS">IS</option>
-        <option value="AI&ML">AI &amp; ML</option>
-        <option value="ECE">ECE</option>
-        <option value="ME">ME</option>
-      </select>
-
       <select id="filter-status"
-              class="px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary">
+              class="px-4 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer">
         <option value="all">⏱ Status: All</option>
         <option value="vacant">✅ Vacant</option>
         <option value="occupied">🔴 Occupied</option>
@@ -128,43 +93,35 @@
     </div>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
     <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-      <div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+      <div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
         <span class="material-symbols-outlined">meeting_room</span>
       </div>
-      <div>
-        <p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Total Rooms</p>
-        <p id="stat-total" class="text-2xl font-bold">—</p>
-      </div>
+      <div><p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Total</p>
+      <p id="stat-total" class="text-2xl font-bold">—</p></div>
     </div>
     <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-      <div class="size-12 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600">
+      <div class="size-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600 shrink-0">
         <span class="material-symbols-outlined">event_available</span>
       </div>
-      <div>
-        <p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Vacant Now</p>
-        <p id="stat-vacant" class="text-2xl font-bold text-green-600">—</p>
-      </div>
+      <div><p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Vacant</p>
+      <p id="stat-vacant" class="text-2xl font-bold text-green-600">—</p></div>
     </div>
     <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-      <div class="size-12 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-600">
+      <div class="size-12 rounded-lg bg-red-100 flex items-center justify-center text-red-600 shrink-0">
         <span class="material-symbols-outlined">lock_clock</span>
       </div>
-      <div>
-        <p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Occupied</p>
-        <p id="stat-occupied" class="text-2xl font-bold text-red-600">—</p>
-      </div>
+      <div><p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Occupied</p>
+      <p id="stat-occupied" class="text-2xl font-bold text-red-600">—</p></div>
     </div>
     <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-      <div class="size-12 rounded-lg bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
+      <div class="size-12 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
         <span class="material-symbols-outlined">history</span>
       </div>
-      <div>
-        <p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Free Soon</p>
-        <p id="stat-free-soon" class="text-2xl font-bold text-amber-600">—</p>
-      </div>
+      <div><p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Free Soon</p>
+      <p id="stat-free-soon" class="text-2xl font-bold text-amber-600">—</p></div>
     </div>
   </div>
 
@@ -172,34 +129,24 @@
   <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
     <span class="material-symbols-outlined text-primary">grid_view</span>
     Classroom Status
+    <span id="room-count" class="text-sm text-slate-400 font-normal ml-1"></span>
   </h3>
-  <div id="room-grid"
-       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    <!-- Cards injected by dashboard.js -->
+  <div id="room-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
     <div class="col-span-full flex justify-center py-12"><div class="loader"></div></div>
-  </div>
-
-  <div class="mt-12 flex justify-center">
-    <button class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-50 transition-colors">
-      Load More Classrooms
-    </button>
   </div>
 </main>
 
-<!-- ── Bottom Mobile Nav ──────────────────────────────────── -->
+<!-- Mobile Nav -->
 <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 md:hidden z-50">
   <div class="flex justify-around items-center h-16">
     <a class="flex flex-col items-center gap-1 text-primary" href="#">
       <span class="material-symbols-outlined">dashboard</span>
       <span class="text-[10px] font-bold">Dashboard</span>
     </a>
-    <a class="flex flex-col items-center gap-1 text-slate-400" href="#">
-      <span class="material-symbols-outlined">apartment</span>
-      <span class="text-[10px] font-medium">Buildings</span>
-    </a>
-    <a class="flex flex-col items-center gap-1 text-slate-400" href="/pages/login.html">
-      <span class="material-symbols-outlined">calendar_month</span>
-      <span class="text-[10px] font-medium">Schedule</span>
+    <a class="flex flex-col items-center gap-1 text-slate-400"
+       href="https://1drv.ms/x/c/2C7F30953A5DF277/IQB9JI02BDvlS5tbXRvorQhuAUTI2xfRY4pavZZQGkfccQY?e=CGQk5f" target="_blank">
+      <span class="material-symbols-outlined">table_chart</span>
+      <span class="text-[10px] font-medium">Pulse Sheet</span>
     </a>
     <a class="flex flex-col items-center gap-1 text-slate-400" href="/pages/login.html">
       <span class="material-symbols-outlined">person</span>
@@ -208,7 +155,6 @@
   </div>
 </div>
 
-<!-- Load dashboard logic (ES module) -->
 <script type="module" src="/js/dashboard.js"></script>
 </body>
 </html>

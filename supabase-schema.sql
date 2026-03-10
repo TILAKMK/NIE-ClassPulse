@@ -1,28 +1,30 @@
 -- ================================================================
---  NIE ClassPulse — Supabase Database Schema
---  Run this SQL in: Supabase Dashboard → SQL Editor → New Query
+--  NIE ClassPulse — Supabase Database Schema (CORRECTED)
+--  Buildings: Madhwacharya Block (MB-*) | Ramanujacharya Block (all others)
+--  30 Classrooms | 2nd, 4th, 6th Semester | CSE, IS, AI&ML
+--  Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ================================================================
 
+-- Drop existing tables if re-running
+drop table if exists public.schedules   cascade;
+drop table if exists public.classrooms  cascade;
+drop table if exists public.profiles    cascade;
 
--- ── 1. PROFILES TABLE ──────────────────────────────────────────
---  Stores each user's role (student / teacher / cr)
---  Automatically created when a user signs up via trigger below.
 
-create table if not exists public.profiles (
-  id        uuid primary key references auth.users(id) on delete cascade,
-  email     text,
-  role      text not null default 'student'   -- 'student' | 'teacher' | 'cr'
-            check (role in ('student', 'teacher', 'cr')),
-  full_name text,
+-- ── 1. PROFILES ────────────────────────────────────────────────
+create table public.profiles (
+  id         uuid primary key references auth.users(id) on delete cascade,
+  email      text,
+  full_name  text,
+  role       text not null default 'student'
+             check (role in ('student','teacher','cr')),
   created_at timestamptz default now()
 );
 
--- Auto-create a profile row whenever someone signs up
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
-  insert into public.profiles (id, email)
-  values (new.id, new.email);
+  insert into public.profiles(id, email) values (new.id, new.email);
   return new;
 end;
 $$;
@@ -33,123 +35,1007 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 
--- ── 2. CLASSROOMS TABLE ────────────────────────────────────────
---  One row per physical classroom
-
-create table if not exists public.classrooms (
+-- ── 2. CLASSROOMS ──────────────────────────────────────────────
+create table public.classrooms (
   id               uuid primary key default gen_random_uuid(),
-  room_number      text not null unique,      -- e.g. "401", "MB-1"
-  building         text not null,             -- e.g. "North Campus"
-  floor            text,                      -- e.g. "4th Floor"
-  department       text,                      -- e.g. "CSE"
-  capacity         int,                       -- number of seats
-  facilities       text,                      -- e.g. "Projector, AC, Wi-Fi"
+  room_number      text not null unique,
+  building         text not null,
+  floor            text,
+  department       text,
+  semester         text,
+  section          text,
+  capacity         int  default 60,
+  facilities       text default 'Projector, Whiteboard, Wi-Fi',
   status           text not null default 'vacant'
-                   check (status in ('vacant', 'occupied', 'free_soon')),
-  -- Current session info (null when vacant)
+                   check (status in ('vacant','occupied','free_soon')),
   current_subject  text,
   current_faculty  text,
   session_start    time,
   session_end      time,
-  next_class_time  text,                      -- display string e.g. "2:30 PM"
-  ends_in          text,                      -- display string e.g. "Ends in 25 mins"
   updated_at       timestamptz default now()
 );
 
--- ── 3. SCHEDULES TABLE ─────────────────────────────────────────
---  Weekly timetable entries (used for the "Today's Schedule" view)
 
-create table if not exists public.schedules (
+-- ── 3. SCHEDULES ───────────────────────────────────────────────
+create table public.schedules (
   id          uuid primary key default gen_random_uuid(),
   room_id     uuid references public.classrooms(id) on delete cascade,
-  day         text not null
-              check (day in ('Monday','Tuesday','Wednesday','Thursday','Friday')),
+  room_number text,
+  day         text not null check (day in ('Monday','Tuesday','Wednesday','Thursday','Friday')),
   start_time  time not null,
   end_time    time not null,
   subject     text not null,
-  faculty     text,
-  section     text,          -- e.g. "4th CSE-A"
-  semester    text           -- e.g. "4th"
+  section     text,
+  semester    text
 );
 
 
--- ── 4. ROW LEVEL SECURITY (RLS) ────────────────────────────────
-
--- Enable RLS on all tables
+-- ── 4. ROW LEVEL SECURITY ──────────────────────────────────────
 alter table public.profiles   enable row level security;
 alter table public.classrooms enable row level security;
 alter table public.schedules  enable row level security;
 
--- PROFILES: users can read their own row; admins can read all
-create policy "Users read own profile"
-  on public.profiles for select
-  using (auth.uid() = id);
+-- Anyone (even unauthenticated) can read classrooms and schedules
+create policy "Public read classrooms" on public.classrooms
+  for select to anon, authenticated using (true);
 
-create policy "Users update own profile"
-  on public.profiles for update
-  using (auth.uid() = id);
+create policy "Public read schedules" on public.schedules
+  for select to anon, authenticated using (true);
 
--- CLASSROOMS: everyone can read; only teachers/CRs can update
-create policy "Anyone can view classrooms"
-  on public.classrooms for select
-  to anon, authenticated
-  using (true);
+-- Only teachers/CRs can update classrooms
+create policy "Editors update classrooms" on public.classrooms
+  for update to authenticated
+  using (exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role in ('teacher','cr')
+  ));
 
-create policy "Teachers and CRs can update classrooms"
-  on public.classrooms for update
-  to authenticated
-  using (
-    exists (
-      select 1 from public.profiles
-      where id = auth.uid()
-        and role in ('teacher', 'cr')
-    )
-  );
-
--- SCHEDULES: everyone can read
-create policy "Anyone can view schedules"
-  on public.schedules for select
-  to anon, authenticated
-  using (true);
+-- Users can read/update their own profile
+create policy "Own profile read"   on public.profiles for select using (auth.uid() = id);
+create policy "Own profile update" on public.profiles for update using (auth.uid() = id);
 
 
 -- ── 5. REALTIME ────────────────────────────────────────────────
---  Allow classrooms table changes to broadcast via Supabase Realtime
-
 alter publication supabase_realtime add table public.classrooms;
 
 
--- ── 6. SAMPLE DATA ─────────────────────────────────────────────
---  Insert a few rooms so the dashboard is not empty.
---  Delete / replace with real data later.
-
+-- ── 6. CLASSROOM DATA (All 30 rooms) ──────────────────────────
 insert into public.classrooms
-  (room_number, building, floor, department, capacity, facilities, status,
-   current_subject, current_faculty, session_start, session_end, next_class_time)
+  (room_number, building, floor, department, semester, section, capacity, facilities, status)
 values
-  ('401', 'North Campus', '4th Floor', 'CSE', 60, 'Projector, AC, Wi-Fi', 'occupied',
-   'ADA – Analysis & Design of Algorithms', 'Dr. Naveen S Pagad', '09:00', '10:00', null),
+  ('101', 'Ramanujacharya Block', '1st Floor', 'CSE', '2nd', '2nd CSE-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('107', 'Ramanujacharya Block', '1st Floor', 'CSE', '2nd', '2nd CSE-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('108', 'Ramanujacharya Block', '1st Floor', 'CSE', '2nd', '2nd CSE-C', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('109', 'Ramanujacharya Block', '1st Floor', 'CSE', '2nd', '2nd CSE-D', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('MB-1', 'Madhwacharya Block', 'Ground Floor', 'CSE', '2nd', '2nd CSE-E', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('MB-2', 'Madhwacharya Block', 'Ground Floor', 'CSE', '2nd', '2nd CSE-F', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('MB-3', 'Madhwacharya Block', 'Ground Floor', 'CSE', '2nd', '2nd CSE-G', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('MB-4', 'Madhwacharya Block', 'Ground Floor', 'CSE', '2nd', '2nd CSE-H', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('MB-5', 'Madhwacharya Block', 'Ground Floor', 'AI & ML', '2nd', '2nd AIML-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('201', 'Ramanujacharya Block', '2nd Floor', 'AI & ML', '2nd', '2nd AIML-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('401', 'Ramanujacharya Block', '4th Floor', 'CSE', '4th', '4th CSE-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('402', 'Ramanujacharya Block', '4th Floor', 'CSE', '4th', '4th CSE-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('403', 'Ramanujacharya Block', '4th Floor', 'CSE', '4th', '4th CSE-C', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('404', 'Ramanujacharya Block', '4th Floor', 'CSE', '4th', '4th CSE-D', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('309', 'Ramanujacharya Block', '3rd Floor', 'AI & ML', '4th', '4th AIML-E', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('310', 'Ramanujacharya Block', '3rd Floor', 'AI & ML', '4th', '4th AIML-F', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('301', 'Ramanujacharya Block', '3rd Floor', 'IS', '4th', '4th IS-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('302', 'Ramanujacharya Block', '3rd Floor', 'IS', '4th', '4th IS-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('303', 'Ramanujacharya Block', '3rd Floor', 'IS', '4th', '4th IS-C', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('304', 'Ramanujacharya Block', '3rd Floor', 'IS', '4th', '4th IS-D', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('405', 'Ramanujacharya Block', '4th Floor', 'CSE', '6th', '6th CSE-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('406', 'Ramanujacharya Block', '4th Floor', 'CSE', '6th', '6th CSE-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('407', 'Ramanujacharya Block', '4th Floor', 'CSE', '6th', '6th CSE-C', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('408', 'Ramanujacharya Block', '4th Floor', 'CSE', '6th', '6th CSE-D', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('305', 'Ramanujacharya Block', '3rd Floor', 'IS', '6th', '6th IS-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('306', 'Ramanujacharya Block', '3rd Floor', 'IS', '6th', '6th IS-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('307', 'Ramanujacharya Block', '3rd Floor', 'IS', '6th', '6th IS-C', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('308', 'Ramanujacharya Block', '3rd Floor', 'IS', '6th', '6th IS-D', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('409', 'Ramanujacharya Block', '4th Floor', 'AI & ML', '6th', '6th AIML-E', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
+  ('410', 'Ramanujacharya Block', '4th Floor', 'AI & ML', '6th', '6th AIML-F', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant');
 
-  ('402', 'North Campus', '4th Floor', 'CSE', 60, 'Projector, AC, Wi-Fi', 'vacant',
-   null, null, null, null, '11:30 AM'),
+-- ── 7. SCHEDULE DATA (from timetable PDFs) ──────────────────
+insert into public.schedules (room_id, room_number, day, start_time, end_time, subject, section, semester)
+select
+  c.id,
+  v.room_number,
+  v.day,
+  v.start_time::time,
+  v.end_time::time,
+  v.subject,
+  v.section,
+  v.semester
+from public.classrooms c
+join (
+  values
+    ('101', 'Monday', '09:00', '10:00', 'ICEE', '2nd CSE-A', '2nd'),
+    ('101', 'Monday', '10:00', '11:00', 'CHE', '2nd CSE-A', '2nd'),
+    ('101', 'Monday', '11:30', '12:30', 'ESC-II', '2nd CSE-A', '2nd'),
+    ('101', 'Monday', '12:30', '13:30', 'ETC', '2nd CSE-A', '2nd'),
+    ('101', 'Monday', '14:30', '15:30', 'IDT LAB', '2nd CSE-A', '2nd'),
+    ('101', 'Monday', '15:30', '16:30', 'IDT LAB', '2nd CSE-A', '2nd'),
+    ('101', 'Tuesday', '09:00', '10:00', 'PLC', '2nd CSE-A', '2nd'),
+    ('101', 'Tuesday', '10:00', '11:00', 'CHE', '2nd CSE-A', '2nd'),
+    ('101', 'Tuesday', '11:30', '12:30', 'MAT', '2nd CSE-A', '2nd'),
+    ('101', 'Tuesday', '12:30', '13:30', 'ESC-II', '2nd CSE-A', '2nd'),
+    ('101', 'Tuesday', '14:30', '15:30', 'CHE/PLC LAB', '2nd CSE-A', '2nd'),
+    ('101', 'Tuesday', '15:30', '16:30', 'CHE/PLC LAB', '2nd CSE-A', '2nd'),
+    ('101', 'Wednesday', '09:00', '10:00', 'CS', '2nd CSE-A', '2nd'),
+    ('101', 'Wednesday', '10:00', '11:00', 'ETC', '2nd CSE-A', '2nd'),
+    ('101', 'Wednesday', '11:30', '12:30', 'MAT', '2nd CSE-A', '2nd'),
+    ('101', 'Wednesday', '12:30', '13:30', 'PLC', '2nd CSE-A', '2nd'),
+    ('101', 'Wednesday', '14:30', '15:30', 'PLC LAB-A1', '2nd CSE-A', '2nd'),
+    ('101', 'Wednesday', '15:30', '16:30', 'PLC LAB-A1', '2nd CSE-A', '2nd'),
+    ('101', 'Thursday', '09:00', '10:00', 'ESC-II', '2nd CSE-A', '2nd'),
+    ('101', 'Thursday', '10:00', '11:00', 'ETC', '2nd CSE-A', '2nd'),
+    ('101', 'Thursday', '11:30', '12:30', 'MAT TUTORIAL', '2nd CSE-A', '2nd'),
+    ('101', 'Thursday', '12:30', '13:30', 'MAT TUTORIAL', '2nd CSE-A', '2nd'),
+    ('101', 'Thursday', '14:30', '15:30', 'CHE LAB', '2nd CSE-A', '2nd'),
+    ('101', 'Thursday', '15:30', '16:30', 'CHE LAB', '2nd CSE-A', '2nd'),
+    ('101', 'Friday', '09:00', '10:00', 'CHE TUT', '2nd CSE-A', '2nd'),
+    ('101', 'Friday', '10:00', '11:00', 'CHE TUT', '2nd CSE-A', '2nd'),
+    ('101', 'Friday', '11:30', '12:30', 'PLC', '2nd CSE-A', '2nd'),
+    ('101', 'Friday', '12:30', '13:30', 'MAT', '2nd CSE-A', '2nd'),
+    ('107', 'Monday', '09:00', '10:00', 'ETC', '2nd CSE-B', '2nd'),
+    ('107', 'Monday', '10:00', '11:00', 'CHE', '2nd CSE-B', '2nd'),
+    ('107', 'Monday', '11:30', '12:30', 'CHE/PLC LAB', '2nd CSE-B', '2nd'),
+    ('107', 'Monday', '12:30', '13:30', 'CHE/PLC LAB', '2nd CSE-B', '2nd'),
+    ('107', 'Monday', '14:30', '15:30', 'MAT', '2nd CSE-B', '2nd'),
+    ('107', 'Tuesday', '09:00', '10:00', 'ETC', '2nd CSE-B', '2nd'),
+    ('107', 'Tuesday', '10:00', '11:00', 'PLC', '2nd CSE-B', '2nd'),
+    ('107', 'Tuesday', '11:30', '12:30', 'ESC-II', '2nd CSE-B', '2nd'),
+    ('107', 'Tuesday', '12:30', '13:30', 'MAT', '2nd CSE-B', '2nd'),
+    ('107', 'Tuesday', '14:30', '15:30', 'IDT LAB', '2nd CSE-B', '2nd'),
+    ('107', 'Tuesday', '15:30', '16:30', 'IDT LAB', '2nd CSE-B', '2nd'),
+    ('107', 'Wednesday', '09:00', '10:00', 'CHE', '2nd CSE-B', '2nd'),
+    ('107', 'Wednesday', '10:00', '11:00', 'PLC', '2nd CSE-B', '2nd'),
+    ('107', 'Wednesday', '11:30', '12:30', 'CHE/PLC LAB', '2nd CSE-B', '2nd'),
+    ('107', 'Wednesday', '12:30', '13:30', 'CHE/PLC LAB', '2nd CSE-B', '2nd'),
+    ('107', 'Wednesday', '14:30', '15:30', 'CS', '2nd CSE-B', '2nd'),
+    ('107', 'Wednesday', '15:30', '16:30', 'ICEE', '2nd CSE-B', '2nd'),
+    ('107', 'Thursday', '09:00', '10:00', 'CHE TUT', '2nd CSE-B', '2nd'),
+    ('107', 'Thursday', '10:00', '11:00', 'CHE TUT', '2nd CSE-B', '2nd'),
+    ('107', 'Thursday', '11:30', '12:30', 'MAT', '2nd CSE-B', '2nd'),
+    ('107', 'Thursday', '12:30', '13:30', 'ESC-II', '2nd CSE-B', '2nd'),
+    ('107', 'Thursday', '14:30', '15:30', 'ETC', '2nd CSE-B', '2nd'),
+    ('107', 'Friday', '09:00', '10:00', 'PLC', '2nd CSE-B', '2nd'),
+    ('107', 'Friday', '10:00', '11:00', 'ESC-II', '2nd CSE-B', '2nd'),
+    ('107', 'Friday', '11:30', '12:30', 'MAT TUTORIAL', '2nd CSE-B', '2nd'),
+    ('107', 'Friday', '12:30', '13:30', 'MAT TUTORIAL', '2nd CSE-B', '2nd'),
+    ('108', 'Monday', '09:00', '10:00', 'ETC', '2nd CSE-C', '2nd'),
+    ('108', 'Monday', '10:00', '11:00', 'PLC', '2nd CSE-C', '2nd'),
+    ('108', 'Monday', '11:30', '12:30', 'MAT TUTORIAL', '2nd CSE-C', '2nd'),
+    ('108', 'Monday', '12:30', '13:30', 'MAT TUTORIAL', '2nd CSE-C', '2nd'),
+    ('108', 'Tuesday', '09:00', '10:00', 'CHE LAB', '2nd CSE-C', '2nd'),
+    ('108', 'Tuesday', '10:00', '11:00', 'CHE LAB', '2nd CSE-C', '2nd'),
+    ('108', 'Tuesday', '11:30', '12:30', 'CHE', '2nd CSE-C', '2nd'),
+    ('108', 'Tuesday', '12:30', '13:30', 'ESC-II', '2nd CSE-C', '2nd'),
+    ('108', 'Tuesday', '14:30', '15:30', 'ETC', '2nd CSE-C', '2nd'),
+    ('108', 'Tuesday', '15:30', '16:30', 'ICEE', '2nd CSE-C', '2nd'),
+    ('108', 'Wednesday', '09:00', '10:00', 'CHE TUT', '2nd CSE-C', '2nd'),
+    ('108', 'Wednesday', '10:00', '11:00', 'CHE TUT', '2nd CSE-C', '2nd'),
+    ('108', 'Wednesday', '11:30', '12:30', 'PLC', '2nd CSE-C', '2nd'),
+    ('108', 'Wednesday', '12:30', '13:30', 'MAT', '2nd CSE-C', '2nd'),
+    ('108', 'Wednesday', '14:30', '15:30', 'IDT LAB', '2nd CSE-C', '2nd'),
+    ('108', 'Wednesday', '15:30', '16:30', 'IDT LAB', '2nd CSE-C', '2nd'),
+    ('108', 'Thursday', '09:00', '10:00', 'MAT', '2nd CSE-C', '2nd'),
+    ('108', 'Thursday', '10:00', '11:00', 'CS', '2nd CSE-C', '2nd'),
+    ('108', 'Thursday', '11:30', '12:30', 'CHE', '2nd CSE-C', '2nd'),
+    ('108', 'Thursday', '12:30', '13:30', 'ESC-II', '2nd CSE-C', '2nd'),
+    ('108', 'Thursday', '14:30', '15:30', 'ETC', '2nd CSE-C', '2nd'),
+    ('108', 'Friday', '09:00', '10:00', 'MAT', '2nd CSE-C', '2nd'),
+    ('108', 'Friday', '10:00', '11:00', 'ESC-II', '2nd CSE-C', '2nd'),
+    ('108', 'Friday', '11:30', '12:30', 'CHE/PLC LAB', '2nd CSE-C', '2nd'),
+    ('108', 'Friday', '12:30', '13:30', 'CHE/PLC LAB', '2nd CSE-C', '2nd'),
+    ('108', 'Friday', '14:30', '15:30', 'PLC', '2nd CSE-C', '2nd'),
+    ('109', 'Monday', '09:00', '10:00', 'CHE/PLC LAB', '2nd CSE-D', '2nd'),
+    ('109', 'Monday', '10:00', '11:00', 'CHE/PLC LAB', '2nd CSE-D', '2nd'),
+    ('109', 'Monday', '11:30', '12:30', 'MAT', '2nd CSE-D', '2nd'),
+    ('109', 'Monday', '12:30', '13:30', 'ESC-II', '2nd CSE-D', '2nd'),
+    ('109', 'Monday', '14:30', '15:30', 'PLC', '2nd CSE-D', '2nd'),
+    ('109', 'Tuesday', '09:00', '10:00', 'ESC-II', '2nd CSE-D', '2nd'),
+    ('109', 'Tuesday', '10:00', '11:00', 'CHE', '2nd CSE-D', '2nd'),
+    ('109', 'Tuesday', '11:30', '12:30', 'CHE/PLC LAB', '2nd CSE-D', '2nd'),
+    ('109', 'Tuesday', '12:30', '13:30', 'CHE/PLC LAB', '2nd CSE-D', '2nd'),
+    ('109', 'Tuesday', '14:30', '15:30', 'ETC', '2nd CSE-D', '2nd'),
+    ('109', 'Wednesday', '09:00', '10:00', 'PLC', '2nd CSE-D', '2nd'),
+    ('109', 'Wednesday', '10:00', '11:00', 'CHE', '2nd CSE-D', '2nd'),
+    ('109', 'Wednesday', '11:30', '12:30', 'MAT', '2nd CSE-D', '2nd'),
+    ('109', 'Wednesday', '12:30', '13:30', 'ETC', '2nd CSE-D', '2nd'),
+    ('109', 'Thursday', '09:00', '10:00', 'CS', '2nd CSE-D', '2nd'),
+    ('109', 'Thursday', '10:00', '11:00', 'MAT', '2nd CSE-D', '2nd'),
+    ('109', 'Thursday', '11:30', '12:30', 'CHE TUTORIAL', '2nd CSE-D', '2nd'),
+    ('109', 'Thursday', '12:30', '13:30', 'CHE TUTORIAL', '2nd CSE-D', '2nd'),
+    ('109', 'Thursday', '14:30', '15:30', 'IDT LAB', '2nd CSE-D', '2nd'),
+    ('109', 'Thursday', '15:30', '16:30', 'IDT LAB', '2nd CSE-D', '2nd'),
+    ('109', 'Friday', '09:00', '10:00', 'MAT TUT', '2nd CSE-D', '2nd'),
+    ('109', 'Friday', '10:00', '11:00', 'MAT TUT', '2nd CSE-D', '2nd'),
+    ('109', 'Friday', '11:30', '12:30', 'ETC', '2nd CSE-D', '2nd'),
+    ('109', 'Friday', '12:30', '13:30', 'ESC-II', '2nd CSE-D', '2nd'),
+    ('109', 'Friday', '14:30', '15:30', 'PLC', '2nd CSE-D', '2nd'),
+    ('109', 'Friday', '15:30', '16:30', 'ICEE', '2nd CSE-D', '2nd'),
+    ('MB-1', 'Monday', '09:00', '10:00', 'MAT TUT', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Monday', '10:00', '11:00', 'MAT TUT', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Monday', '11:30', '12:30', 'CHE', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Monday', '12:30', '13:30', 'ETC', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Monday', '15:30', '16:30', 'ICEE', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Tuesday', '09:00', '10:00', 'ETC', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Tuesday', '10:00', '11:00', 'PLC', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Tuesday', '11:30', '12:30', 'CHE TUTORIAL', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Tuesday', '12:30', '13:30', 'CHE TUTORIAL', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Tuesday', '14:30', '15:30', 'MAT', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Wednesday', '09:00', '10:00', 'CHE LAB', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Wednesday', '10:00', '11:00', 'CHE LAB', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Wednesday', '11:30', '12:30', 'CHE', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Wednesday', '12:30', '13:30', 'ESC-II', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Wednesday', '14:30', '15:30', 'PLC', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Thursday', '09:00', '10:00', 'MAT', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Thursday', '10:00', '11:00', 'ESC-II', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Thursday', '11:30', '12:30', 'CHE/PLC LAB', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Thursday', '12:30', '13:30', 'CHE/PLC LAB', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Thursday', '14:30', '15:30', 'CS', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Friday', '09:00', '10:00', 'PLC', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Friday', '10:00', '11:00', 'MAT', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Friday', '11:30', '12:30', 'ESC-II', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Friday', '12:30', '13:30', 'ETC', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Friday', '14:30', '15:30', 'IDT LAB', '2nd CSE-E', '2nd'),
+    ('MB-1', 'Friday', '15:30', '16:30', 'IDT LAB', '2nd CSE-E', '2nd'),
+    ('MB-2', 'Monday', '09:00', '10:00', 'MAT', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Monday', '11:30', '12:30', 'PHY/PSCL LAB', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Monday', '12:30', '13:30', 'PHY/PSCL LAB', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Monday', '14:30', '15:30', 'CAED', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Monday', '15:30', '16:30', 'CAED', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Tuesday', '09:00', '10:00', 'PHY TUT', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Tuesday', '10:00', '11:00', 'PHY TUT', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Tuesday', '11:30', '12:30', 'MAT TUTORIAL', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Tuesday', '12:30', '13:30', 'MAT TUTORIAL', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Tuesday', '14:30', '15:30', 'PSC', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Tuesday', '15:30', '16:30', 'ESC-II', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Wednesday', '09:00', '10:00', 'PHY', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Wednesday', '10:00', '11:00', 'MAT', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Wednesday', '11:30', '12:30', 'ESC-II', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Wednesday', '12:30', '13:30', 'PSC', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Wednesday', '14:30', '15:30', 'PHY/PSCL LAB', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Wednesday', '15:30', '16:30', 'PHY/PSCL LAB', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Thursday', '09:00', '10:00', 'CAED', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Thursday', '10:00', '11:00', 'CAED', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Thursday', '11:30', '12:30', 'PSC', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Thursday', '12:30', '13:30', 'ESC-II', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Thursday', '15:30', '16:30', 'BK', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Friday', '09:00', '10:00', 'PHY', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Friday', '10:00', '11:00', 'MAT', '2nd CSE-F', '2nd'),
+    ('MB-2', 'Friday', '14:30', '15:30', 'SK', '2nd CSE-F', '2nd'),
+    ('MB-3', 'Monday', '10:00', '11:00', 'PSC', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Monday', '11:30', '12:30', 'ESC-II', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Monday', '12:30', '13:30', 'MAT', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Tuesday', '09:00', '10:00', 'PSC', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Tuesday', '10:00', '11:00', 'PHY', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Tuesday', '11:30', '12:30', 'MAT TUTORIAL', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Tuesday', '12:30', '13:30', 'MAT TUTORIAL', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Tuesday', '14:30', '15:30', 'CAED', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Tuesday', '15:30', '16:30', 'CAED', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Wednesday', '09:00', '10:00', 'PHY LAB', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Wednesday', '10:00', '11:00', 'PHY LAB', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Wednesday', '11:30', '12:30', 'PHY TUTORIAL', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Wednesday', '12:30', '13:30', 'PHY TUTORIAL', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Wednesday', '14:30', '15:30', 'MAT', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Wednesday', '15:30', '16:30', 'ESC-II', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Thursday', '09:00', '10:00', 'PSC', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Thursday', '10:00', '11:00', 'ESC-II', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Thursday', '11:30', '12:30', 'PHY/PSCL LAB', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Thursday', '12:30', '13:30', 'PHY/PSCL LAB', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Thursday', '14:30', '15:30', 'SK', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Thursday', '15:30', '16:30', 'BK', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Friday', '09:00', '10:00', 'CAED', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Friday', '10:00', '11:00', 'CAED', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Friday', '11:30', '12:30', 'MAT', '2nd CSE-G', '2nd'),
+    ('MB-3', 'Friday', '12:30', '13:30', 'PHY', '2nd CSE-G', '2nd'),
+    ('MB-4', 'Monday', '09:00', '10:00', 'PSC', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Monday', '10:00', '11:00', 'PHY', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Monday', '11:30', '12:30', 'CAED', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Monday', '12:30', '13:30', 'CAED', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Monday', '14:30', '15:30', 'ESC-II', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Tuesday', '09:00', '10:00', 'MAT', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Tuesday', '10:00', '11:00', 'ESC-II', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Tuesday', '11:30', '12:30', 'PHY/PSCL LAB', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Tuesday', '12:30', '13:30', 'PHY/PSCL LAB', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Wednesday', '09:00', '10:00', 'MAT TUT', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Wednesday', '10:00', '11:00', 'MAT TUT', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Wednesday', '11:30', '12:30', 'ESC-II', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Wednesday', '12:30', '13:30', 'PSC', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Wednesday', '14:30', '15:30', 'CAED', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Wednesday', '15:30', '16:30', 'CAED', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Thursday', '09:00', '10:00', 'PHY TUT', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Thursday', '10:00', '11:00', 'PHY TUT', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Thursday', '11:30', '12:30', 'MAT', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Thursday', '14:30', '15:30', 'PHY/PSCL LAB', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Thursday', '15:30', '16:30', 'PHY/PSCL LAB', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Friday', '09:00', '10:00', 'PSC', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Friday', '10:00', '11:00', 'PHY', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Friday', '11:30', '12:30', 'MAT', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Friday', '12:30', '13:30', 'SK', '2nd CSE-H', '2nd'),
+    ('MB-4', 'Friday', '15:30', '16:30', 'BK', '2nd CSE-H', '2nd'),
+    ('MB-5', 'Monday', '09:00', '10:00', 'ESC-II', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Monday', '11:30', '12:30', 'PHY TUTORIAL', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Monday', '12:30', '13:30', 'PHY TUTORIAL', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Tuesday', '09:00', '10:00', 'MAT', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Tuesday', '10:00', '11:00', 'PSC', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Tuesday', '11:30', '12:30', 'CAED', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Tuesday', '12:30', '13:30', 'CAED', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Tuesday', '14:30', '15:30', 'PHY/PSCL LAB', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Tuesday', '15:30', '16:30', 'PHY/PSCL LAB', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Wednesday', '09:00', '10:00', 'PSC', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Wednesday', '10:00', '11:00', 'ESC-II', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Wednesday', '11:30', '12:30', 'MAT', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Wednesday', '12:30', '13:30', 'PHY', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Thursday', '09:00', '10:00', 'ESC-II', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Thursday', '10:00', '11:00', 'PHY', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Thursday', '11:30', '12:30', 'MAT TUTORIAL', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Thursday', '12:30', '13:30', 'MAT TUTORIAL', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Thursday', '14:30', '15:30', 'CAED', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Thursday', '15:30', '16:30', 'CAED', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Friday', '09:00', '10:00', 'SK', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Friday', '10:00', '11:00', 'PSC', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Friday', '11:30', '12:30', 'PHY/PSCL LAB', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Friday', '12:30', '13:30', 'PHY/PSCL LAB', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Friday', '14:30', '15:30', 'MAT', '2nd AIML-A', '2nd'),
+    ('MB-5', 'Friday', '15:30', '16:30', 'BK', '2nd AIML-A', '2nd'),
+    ('201', 'Monday', '09:00', '10:00', 'PHY TUT', '2nd AIML-B', '2nd'),
+    ('201', 'Monday', '10:00', '11:00', 'PHY TUT', '2nd AIML-B', '2nd'),
+    ('201', 'Monday', '11:30', '12:30', 'MAT', '2nd AIML-B', '2nd'),
+    ('201', 'Monday', '12:30', '13:30', 'PLC', '2nd AIML-B', '2nd'),
+    ('201', 'Tuesday', '09:00', '10:00', 'PLC', '2nd AIML-B', '2nd'),
+    ('201', 'Tuesday', '10:00', '11:00', 'MAT', '2nd AIML-B', '2nd'),
+    ('201', 'Tuesday', '11:30', '12:30', 'PHY', '2nd AIML-B', '2nd'),
+    ('201', 'Tuesday', '12:30', '13:30', 'ESC-II', '2nd AIML-B', '2nd'),
+    ('201', 'Wednesday', '09:00', '10:00', 'CAED', '2nd AIML-B', '2nd'),
+    ('201', 'Wednesday', '10:00', '11:00', 'CAED', '2nd AIML-B', '2nd'),
+    ('201', 'Wednesday', '11:30', '12:30', 'PHY/PCL LAB', '2nd AIML-B', '2nd'),
+    ('201', 'Wednesday', '12:30', '13:30', 'PHY/PCL LAB', '2nd AIML-B', '2nd'),
+    ('201', 'Wednesday', '14:30', '15:30', 'ESC-II', '2nd AIML-B', '2nd'),
+    ('201', 'Wednesday', '15:30', '16:30', 'PHY', '2nd AIML-B', '2nd'),
+    ('201', 'Thursday', '09:00', '10:00', 'SK', '2nd AIML-B', '2nd'),
+    ('201', 'Thursday', '10:00', '11:00', 'ESC-II', '2nd AIML-B', '2nd'),
+    ('201', 'Thursday', '12:30', '13:30', 'MAT', '2nd AIML-B', '2nd'),
+    ('201', 'Thursday', '14:30', '15:30', 'PLC', '2nd AIML-B', '2nd'),
+    ('201', 'Thursday', '15:30', '16:30', 'BK', '2nd AIML-B', '2nd'),
+    ('201', 'Friday', '09:00', '10:00', 'MAT TUT', '2nd AIML-B', '2nd'),
+    ('201', 'Friday', '10:00', '11:00', 'MAT TUT', '2nd AIML-B', '2nd'),
+    ('201', 'Friday', '11:30', '12:30', 'CAED', '2nd AIML-B', '2nd'),
+    ('201', 'Friday', '12:30', '13:30', 'CAED', '2nd AIML-B', '2nd'),
+    ('201', 'Friday', '14:30', '15:30', 'PHY/PCL LAB', '2nd AIML-B', '2nd'),
+    ('201', 'Friday', '15:30', '16:30', 'PHY/PCL LAB', '2nd AIML-B', '2nd'),
+    ('401', 'Monday', '09:00', '10:00', 'ADA', '4th CSE-A', '4th'),
+    ('401', 'Monday', '10:00', '11:00', 'DBMS', '4th CSE-A', '4th'),
+    ('401', 'Monday', '11:30', '12:30', 'UI/UX Lab (A1)', '4th CSE-A', '4th'),
+    ('401', 'Monday', '12:30', '13:30', 'UI/UX Lab (A1)', '4th CSE-A', '4th'),
+    ('401', 'Tuesday', '09:00', '10:00', 'ADA', '4th CSE-A', '4th'),
+    ('401', 'Tuesday', '10:00', '11:00', 'DBMS', '4th CSE-A', '4th'),
+    ('401', 'Tuesday', '11:30', '12:30', 'MC', '4th CSE-A', '4th'),
+    ('401', 'Tuesday', '12:30', '13:30', 'MC', '4th CSE-A', '4th'),
+    ('401', 'Tuesday', '14:30', '15:30', 'UI/UX Lab (A2)', '4th CSE-A', '4th'),
+    ('401', 'Tuesday', '15:30', '16:30', 'UI/UX Lab (A2)', '4th CSE-A', '4th'),
+    ('401', 'Wednesday', '09:00', '10:00', 'Lab (MC/ADA/DBMS)', '4th CSE-A', '4th'),
+    ('401', 'Wednesday', '10:00', '11:00', 'Lab (MC/ADA/DBMS)', '4th CSE-A', '4th'),
+    ('401', 'Wednesday', '11:30', '12:30', 'DMS', '4th CSE-A', '4th'),
+    ('401', 'Wednesday', '12:30', '13:30', 'Biology', '4th CSE-A', '4th'),
+    ('401', 'Wednesday', '14:30', '15:30', 'Biology', '4th CSE-A', '4th'),
+    ('401', 'Thursday', '09:00', '10:00', 'UHV', '4th CSE-A', '4th'),
+    ('401', 'Thursday', '10:00', '11:00', 'ADA', '4th CSE-A', '4th'),
+    ('401', 'Thursday', '11:30', '12:30', 'DMS', '4th CSE-A', '4th'),
+    ('401', 'Thursday', '12:30', '13:30', 'MC', '4th CSE-A', '4th'),
+    ('401', 'Thursday', '14:30', '15:30', 'Lab (MC/ADA/DBMS)', '4th CSE-A', '4th'),
+    ('401', 'Thursday', '15:30', '16:30', 'Lab (MC/ADA/DBMS)', '4th CSE-A', '4th'),
+    ('401', 'Friday', '09:00', '10:00', 'DBMS', '4th CSE-A', '4th'),
+    ('401', 'Friday', '10:00', '11:00', 'MC', '4th CSE-A', '4th'),
+    ('401', 'Friday', '11:30', '12:30', 'Lab (ADA/DBMS/MC)', '4th CSE-A', '4th'),
+    ('401', 'Friday', '12:30', '13:30', 'Lab (ADA/DBMS/MC)', '4th CSE-A', '4th'),
+    ('401', 'Friday', '14:30', '15:30', 'DMS Tutorial', '4th CSE-A', '4th'),
+    ('401', 'Friday', '15:30', '16:30', 'DMS Tutorial', '4th CSE-A', '4th'),
+    ('402', 'Monday', '09:00', '10:00', 'DMS', '4th CSE-B', '4th'),
+    ('402', 'Monday', '10:00', '11:00', 'DBMS', '4th CSE-B', '4th'),
+    ('402', 'Monday', '11:30', '12:30', 'ADA', '4th CSE-B', '4th'),
+    ('402', 'Monday', '12:30', '13:30', 'UHV', '4th CSE-B', '4th'),
+    ('402', 'Monday', '14:30', '15:30', 'Lab (ADA/DBMS/MC)', '4th CSE-B', '4th'),
+    ('402', 'Monday', '15:30', '16:30', 'Lab (ADA/DBMS/MC)', '4th CSE-B', '4th'),
+    ('402', 'Tuesday', '09:00', '10:00', 'Lab (MC/ADA/DBMS)', '4th CSE-B', '4th'),
+    ('402', 'Tuesday', '10:00', '11:00', 'Lab (MC/ADA/DBMS)', '4th CSE-B', '4th'),
+    ('402', 'Tuesday', '11:30', '12:30', 'DBMS', '4th CSE-B', '4th'),
+    ('402', 'Tuesday', '12:30', '13:30', 'MC', '4th CSE-B', '4th'),
+    ('402', 'Tuesday', '14:30', '15:30', 'Biology', '4th CSE-B', '4th'),
+    ('402', 'Wednesday', '09:00', '10:00', 'DBMS', '4th CSE-B', '4th'),
+    ('402', 'Wednesday', '10:00', '11:00', 'ADA', '4th CSE-B', '4th'),
+    ('402', 'Wednesday', '11:30', '12:30', 'UI/UX Lab (B1)', '4th CSE-B', '4th'),
+    ('402', 'Wednesday', '12:30', '13:30', 'UI/UX Lab (B1)', '4th CSE-B', '4th'),
+    ('402', 'Thursday', '09:00', '10:00', 'MC', '4th CSE-B', '4th'),
+    ('402', 'Thursday', '10:00', '11:00', 'ADA', '4th CSE-B', '4th'),
+    ('402', 'Thursday', '11:30', '12:30', 'Lab (DBMS/MC)', '4th CSE-B', '4th'),
+    ('402', 'Thursday', '12:30', '13:30', 'Lab (DBMS/MC)', '4th CSE-B', '4th'),
+    ('402', 'Thursday', '14:30', '15:30', 'DMS Tutorial', '4th CSE-B', '4th'),
+    ('402', 'Thursday', '15:30', '16:30', 'DMS Tutorial', '4th CSE-B', '4th'),
+    ('402', 'Friday', '09:00', '10:00', 'DMS', '4th CSE-B', '4th'),
+    ('402', 'Friday', '10:00', '11:00', 'MC', '4th CSE-B', '4th'),
+    ('402', 'Friday', '11:30', '12:30', 'Lab (ADA)', '4th CSE-B', '4th'),
+    ('402', 'Friday', '12:30', '13:30', 'Lab (ADA)', '4th CSE-B', '4th'),
+    ('402', 'Friday', '14:30', '15:30', 'UI/UX Lab (B2)', '4th CSE-B', '4th'),
+    ('402', 'Friday', '15:30', '16:30', 'UI/UX Lab (B2)', '4th CSE-B', '4th'),
+    ('403', 'Monday', '09:00', '10:00', 'MC', '4th CSE-C', '4th'),
+    ('403', 'Monday', '10:00', '11:00', 'DMS', '4th CSE-C', '4th'),
+    ('403', 'Monday', '11:30', '12:30', 'Lab (ADA/DBMS/MC)', '4th CSE-C', '4th'),
+    ('403', 'Monday', '12:30', '13:30', 'Lab (ADA/DBMS/MC)', '4th CSE-C', '4th'),
+    ('403', 'Tuesday', '09:00', '10:00', 'DBMS', '4th CSE-C', '4th'),
+    ('403', 'Tuesday', '10:00', '11:00', 'MC', '4th CSE-C', '4th'),
+    ('403', 'Tuesday', '11:30', '12:30', 'UHV', '4th CSE-C', '4th'),
+    ('403', 'Tuesday', '12:30', '13:30', 'ADA', '4th CSE-C', '4th'),
+    ('403', 'Tuesday', '14:30', '15:30', 'Lab (MC/ADA/DBMS)', '4th CSE-C', '4th'),
+    ('403', 'Tuesday', '15:30', '16:30', 'Lab (MC/ADA/DBMS)', '4th CSE-C', '4th'),
+    ('403', 'Wednesday', '09:00', '10:00', 'DMS', '4th CSE-C', '4th'),
+    ('403', 'Wednesday', '10:00', '11:00', 'ADA', '4th CSE-C', '4th'),
+    ('403', 'Wednesday', '11:30', '12:30', 'DBMS', '4th CSE-C', '4th'),
+    ('403', 'Wednesday', '12:30', '13:30', 'Biology', '4th CSE-C', '4th'),
+    ('403', 'Wednesday', '14:30', '15:30', 'DMS Tutorial', '4th CSE-C', '4th'),
+    ('403', 'Wednesday', '15:30', '16:30', 'DMS Tutorial', '4th CSE-C', '4th'),
+    ('403', 'Thursday', '09:00', '10:00', 'MC', '4th CSE-C', '4th'),
+    ('403', 'Thursday', '10:00', '11:00', 'DBMS', '4th CSE-C', '4th'),
+    ('403', 'Thursday', '11:30', '12:30', 'UI/UX Lab (C1)', '4th CSE-C', '4th'),
+    ('403', 'Thursday', '12:30', '13:30', 'UI/UX Lab (C1)', '4th CSE-C', '4th'),
+    ('403', 'Thursday', '14:30', '15:30', 'Biology', '4th CSE-C', '4th'),
+    ('403', 'Friday', '09:00', '10:00', 'Lab (DBMS/MC/ADA)', '4th CSE-C', '4th'),
+    ('403', 'Friday', '10:00', '11:00', 'Lab (DBMS/MC/ADA)', '4th CSE-C', '4th'),
+    ('403', 'Friday', '11:30', '12:30', 'ADA', '4th CSE-C', '4th'),
+    ('403', 'Friday', '12:30', '13:30', 'Activity', '4th CSE-C', '4th'),
+    ('403', 'Friday', '14:30', '15:30', 'UI/UX Lab (C2)', '4th CSE-C', '4th'),
+    ('403', 'Friday', '15:30', '16:30', 'UI/UX Lab (C2)', '4th CSE-C', '4th'),
+    ('404', 'Monday', '09:00', '10:00', 'Lab (ADA/DBMS/MC)', '4th CSE-D', '4th'),
+    ('404', 'Monday', '10:00', '11:00', 'Lab (ADA/DBMS/MC)', '4th CSE-D', '4th'),
+    ('404', 'Monday', '11:30', '12:30', 'DMS', '4th CSE-D', '4th'),
+    ('404', 'Monday', '12:30', '13:30', 'MC', '4th CSE-D', '4th'),
+    ('404', 'Monday', '14:30', '15:30', 'DMS Tutorial', '4th CSE-D', '4th'),
+    ('404', 'Monday', '15:30', '16:30', 'DMS Tutorial', '4th CSE-D', '4th'),
+    ('404', 'Tuesday', '09:00', '10:00', 'MC', '4th CSE-D', '4th'),
+    ('404', 'Tuesday', '10:00', '11:00', 'ADA', '4th CSE-D', '4th'),
+    ('404', 'Tuesday', '11:30', '12:30', 'UI/UX Lab (D1)', '4th CSE-D', '4th'),
+    ('404', 'Tuesday', '12:30', '13:30', 'UI/UX Lab (D1)', '4th CSE-D', '4th'),
+    ('404', 'Tuesday', '14:30', '15:30', 'Biology', '4th CSE-D', '4th'),
+    ('404', 'Wednesday', '09:00', '10:00', 'UHV', '4th CSE-D', '4th'),
+    ('404', 'Wednesday', '10:00', '11:00', 'DBMS', '4th CSE-D', '4th'),
+    ('404', 'Wednesday', '11:30', '12:30', 'Lab (MC/ADA/DBMS)', '4th CSE-D', '4th'),
+    ('404', 'Wednesday', '12:30', '13:30', 'Lab (MC/ADA/DBMS)', '4th CSE-D', '4th'),
+    ('404', 'Thursday', '09:00', '10:00', 'DMS', '4th CSE-D', '4th'),
+    ('404', 'Thursday', '10:00', '11:00', 'MC', '4th CSE-D', '4th'),
+    ('404', 'Thursday', '11:30', '12:30', 'ADA', '4th CSE-D', '4th'),
+    ('404', 'Thursday', '12:30', '13:30', 'DBMS', '4th CSE-D', '4th'),
+    ('404', 'Thursday', '14:30', '15:30', 'UI/UX Lab (D2)', '4th CSE-D', '4th'),
+    ('404', 'Thursday', '15:30', '16:30', 'UI/UX Lab (D2)', '4th CSE-D', '4th'),
+    ('404', 'Friday', '09:00', '10:00', 'Biology', '4th CSE-D', '4th'),
+    ('404', 'Friday', '10:00', '11:00', 'ADA', '4th CSE-D', '4th'),
+    ('404', 'Friday', '11:30', '12:30', 'DBMS', '4th CSE-D', '4th'),
+    ('404', 'Friday', '12:30', '13:30', 'Activity', '4th CSE-D', '4th'),
+    ('404', 'Friday', '14:30', '15:30', 'Lab (DBMS/MC/ADA)', '4th CSE-D', '4th'),
+    ('404', 'Friday', '15:30', '16:30', 'Lab (DBMS/MC/ADA)', '4th CSE-D', '4th'),
+    ('309', 'Monday', '09:00', '10:00', 'ADA', '4th AIML-E', '4th'),
+    ('309', 'Monday', '10:00', '11:00', 'AI', '4th AIML-E', '4th'),
+    ('309', 'Monday', '11:30', '12:30', 'DBMS', '4th AIML-E', '4th'),
+    ('309', 'Monday', '12:30', '13:30', 'DMS/Algebra', '4th AIML-E', '4th'),
+    ('309', 'Monday', '14:30', '15:30', 'Lab (ADA/DBMS/AI)', '4th AIML-E', '4th'),
+    ('309', 'Monday', '15:30', '16:30', 'Lab (ADA/DBMS/AI)', '4th AIML-E', '4th'),
+    ('309', 'Tuesday', '09:00', '10:00', 'AI', '4th AIML-E', '4th'),
+    ('309', 'Tuesday', '10:00', '11:00', 'ADA', '4th AIML-E', '4th'),
+    ('309', 'Tuesday', '11:30', '12:30', 'Lab (ADA/DBMS)', '4th AIML-E', '4th'),
+    ('309', 'Tuesday', '12:30', '13:30', 'Lab (ADA/DBMS)', '4th AIML-E', '4th'),
+    ('309', 'Tuesday', '14:30', '15:30', 'AI Lab (E1)', '4th AIML-E', '4th'),
+    ('309', 'Tuesday', '15:30', '16:30', 'AI Lab (E1)', '4th AIML-E', '4th'),
+    ('309', 'Wednesday', '09:00', '10:00', 'UHV', '4th AIML-E', '4th'),
+    ('309', 'Wednesday', '10:00', '11:00', 'DBMS', '4th AIML-E', '4th'),
+    ('309', 'Wednesday', '11:30', '12:30', 'DMS/Algebra', '4th AIML-E', '4th'),
+    ('309', 'Wednesday', '12:30', '13:30', 'ADA', '4th AIML-E', '4th'),
+    ('309', 'Wednesday', '14:30', '15:30', 'MERN Lab (E2)', '4th AIML-E', '4th'),
+    ('309', 'Wednesday', '15:30', '16:30', 'MERN Lab (E2)', '4th AIML-E', '4th'),
+    ('309', 'Thursday', '09:00', '10:00', 'Lab (DBMS/AI/ADA)', '4th AIML-E', '4th'),
+    ('309', 'Thursday', '10:00', '11:00', 'Lab (DBMS/AI/ADA)', '4th AIML-E', '4th'),
+    ('309', 'Thursday', '11:30', '12:30', 'Biology', '4th AIML-E', '4th'),
+    ('309', 'Thursday', '12:30', '13:30', 'Biology', '4th AIML-E', '4th'),
+    ('309', 'Friday', '09:00', '10:00', 'DBMS', '4th AIML-E', '4th'),
+    ('309', 'Friday', '10:00', '11:00', 'AI', '4th AIML-E', '4th'),
+    ('309', 'Friday', '11:30', '12:30', 'DMS/Algebra', '4th AIML-E', '4th'),
+    ('309', 'Friday', '12:30', '13:30', 'DMS/Algebra', '4th AIML-E', '4th'),
+    ('309', 'Friday', '14:30', '15:30', 'MERN Lab (E1)', '4th AIML-E', '4th'),
+    ('309', 'Friday', '15:30', '16:30', 'MERN Lab (E1)', '4th AIML-E', '4th'),
+    ('310', 'Monday', '09:00', '10:00', 'UHV', '4th AIML-F', '4th'),
+    ('310', 'Monday', '10:00', '11:00', 'ADA', '4th AIML-F', '4th'),
+    ('310', 'Monday', '11:30', '12:30', 'AI', '4th AIML-F', '4th'),
+    ('310', 'Monday', '12:30', '13:30', 'DMS/Algebra', '4th AIML-F', '4th'),
+    ('310', 'Tuesday', '09:00', '10:00', 'Lab (ADA/DBMS/AI)', '4th AIML-F', '4th'),
+    ('310', 'Tuesday', '10:00', '11:00', 'Lab (ADA/DBMS/AI)', '4th AIML-F', '4th'),
+    ('310', 'Tuesday', '11:30', '12:30', 'Biology', '4th AIML-F', '4th'),
+    ('310', 'Tuesday', '12:30', '13:30', 'ADA', '4th AIML-F', '4th'),
+    ('310', 'Tuesday', '14:30', '15:30', 'MERN Lab (F1)', '4th AIML-F', '4th'),
+    ('310', 'Tuesday', '15:30', '16:30', 'MERN Lab (F1)', '4th AIML-F', '4th'),
+    ('310', 'Wednesday', '09:00', '10:00', 'ADA', '4th AIML-F', '4th'),
+    ('310', 'Wednesday', '10:00', '11:00', 'AI', '4th AIML-F', '4th'),
+    ('310', 'Wednesday', '11:30', '12:30', 'DMS/Algebra', '4th AIML-F', '4th'),
+    ('310', 'Wednesday', '12:30', '13:30', 'DBMS', '4th AIML-F', '4th'),
+    ('310', 'Wednesday', '14:30', '15:30', 'Lab (DBMS/AI/ADA)', '4th AIML-F', '4th'),
+    ('310', 'Wednesday', '15:30', '16:30', 'Lab (DBMS/AI/ADA)', '4th AIML-F', '4th'),
+    ('310', 'Thursday', '09:00', '10:00', 'AI', '4th AIML-F', '4th'),
+    ('310', 'Thursday', '10:00', '11:00', 'DBMS', '4th AIML-F', '4th'),
+    ('310', 'Thursday', '11:30', '12:30', 'Lab (AI/ADA/DBMS)', '4th AIML-F', '4th'),
+    ('310', 'Thursday', '12:30', '13:30', 'Lab (AI/ADA/DBMS)', '4th AIML-F', '4th'),
+    ('310', 'Thursday', '14:30', '15:30', 'MERN Lab (F2)', '4th AIML-F', '4th'),
+    ('310', 'Thursday', '15:30', '16:30', 'MERN Lab (F2)', '4th AIML-F', '4th'),
+    ('310', 'Friday', '09:00', '10:00', 'Biology', '4th AIML-F', '4th'),
+    ('310', 'Friday', '10:00', '11:00', 'DBMS', '4th AIML-F', '4th'),
+    ('310', 'Friday', '11:30', '12:30', 'DMS/Algebra', '4th AIML-F', '4th'),
+    ('310', 'Friday', '12:30', '13:30', 'DMS/Algebra', '4th AIML-F', '4th'),
+    ('301', 'Monday', '09:00', '10:00', 'ADA/AJ/DBMS Lab', '4th IS-A', '4th'),
+    ('301', 'Monday', '10:00', '11:00', 'ADA/AJ/DBMS Lab', '4th IS-A', '4th'),
+    ('301', 'Monday', '11:30', '12:30', 'ADA', '4th IS-A', '4th'),
+    ('301', 'Monday', '12:30', '13:30', 'UHVC', '4th IS-A', '4th'),
+    ('301', 'Tuesday', '09:00', '10:00', 'GT', '4th IS-A', '4th'),
+    ('301', 'Tuesday', '10:00', '11:00', 'AJ', '4th IS-A', '4th'),
+    ('301', 'Tuesday', '11:30', '12:30', 'ADA/AJ/DBMS Lab', '4th IS-A', '4th'),
+    ('301', 'Tuesday', '12:30', '13:30', 'ADA/AJ/DBMS Lab', '4th IS-A', '4th'),
+    ('301', 'Tuesday', '14:30', '15:30', 'BFCE', '4th IS-A', '4th'),
+    ('301', 'Wednesday', '09:00', '10:00', 'AJ', '4th IS-A', '4th'),
+    ('301', 'Wednesday', '10:00', '11:00', 'DBMS', '4th IS-A', '4th'),
+    ('301', 'Wednesday', '11:30', '12:30', 'GT', '4th IS-A', '4th'),
+    ('301', 'Wednesday', '12:30', '13:30', 'BFCE', '4th IS-A', '4th'),
+    ('301', 'Wednesday', '14:30', '15:30', 'ADA/AJ/DBMS Lab', '4th IS-A', '4th'),
+    ('301', 'Wednesday', '15:30', '16:30', 'ADA/AJ/DBMS Lab', '4th IS-A', '4th'),
+    ('301', 'Thursday', '10:00', '11:00', 'ADA', '4th IS-A', '4th'),
+    ('301', 'Thursday', '11:30', '12:30', 'AJ', '4th IS-A', '4th'),
+    ('301', 'Thursday', '12:30', '13:30', 'DBMS', '4th IS-A', '4th'),
+    ('301', 'Thursday', '14:30', '15:30', 'GT Tutorial', '4th IS-A', '4th'),
+    ('301', 'Thursday', '15:30', '16:30', 'GT Tutorial', '4th IS-A', '4th'),
+    ('301', 'Friday', '09:00', '10:00', 'DBMS', '4th IS-A', '4th'),
+    ('301', 'Friday', '10:00', '11:00', 'GIT&S', '4th IS-A', '4th'),
+    ('301', 'Friday', '11:30', '12:30', 'ADA', '4th IS-A', '4th'),
+    ('302', 'Monday', '10:00', '11:00', 'ADA', '4th IS-B', '4th'),
+    ('302', 'Monday', '11:30', '12:30', 'AJ', '4th IS-B', '4th'),
+    ('302', 'Monday', '12:30', '13:30', 'GIT&S', '4th IS-B', '4th'),
+    ('302', 'Monday', '14:30', '15:30', 'GT Tutorial', '4th IS-B', '4th'),
+    ('302', 'Monday', '15:30', '16:30', 'GT Tutorial', '4th IS-B', '4th'),
+    ('302', 'Tuesday', '09:00', '10:00', 'ADA/AJ/DBMS Lab', '4th IS-B', '4th'),
+    ('302', 'Tuesday', '10:00', '11:00', 'ADA/AJ/DBMS Lab', '4th IS-B', '4th'),
+    ('302', 'Tuesday', '11:30', '12:30', 'ADA', '4th IS-B', '4th'),
+    ('302', 'Tuesday', '12:30', '13:30', 'AJ', '4th IS-B', '4th'),
+    ('302', 'Wednesday', '09:00', '10:00', 'DBMS', '4th IS-B', '4th'),
+    ('302', 'Wednesday', '10:00', '11:00', 'AJ', '4th IS-B', '4th'),
+    ('302', 'Wednesday', '11:30', '12:30', 'ADA/AJ/DBMS Lab', '4th IS-B', '4th'),
+    ('302', 'Wednesday', '12:30', '13:30', 'ADA/AJ/DBMS Lab', '4th IS-B', '4th'),
+    ('302', 'Thursday', '09:00', '10:00', 'UHVC', '4th IS-B', '4th'),
+    ('302', 'Thursday', '10:00', '11:00', 'DBMS', '4th IS-B', '4th'),
+    ('302', 'Thursday', '11:30', '12:30', 'GT', '4th IS-B', '4th'),
+    ('302', 'Thursday', '12:30', '13:30', 'BFCE', '4th IS-B', '4th'),
+    ('302', 'Thursday', '14:30', '15:30', 'ADA/AJ/DBMS Lab', '4th IS-B', '4th'),
+    ('302', 'Thursday', '15:30', '16:30', 'ADA/AJ/DBMS Lab', '4th IS-B', '4th'),
+    ('302', 'Friday', '09:00', '10:00', 'ADA', '4th IS-B', '4th'),
+    ('302', 'Friday', '10:00', '11:00', 'GT', '4th IS-B', '4th'),
+    ('302', 'Friday', '11:30', '12:30', 'BFCE', '4th IS-B', '4th'),
+    ('302', 'Friday', '12:30', '13:30', 'DBMS', '4th IS-B', '4th'),
+    ('303', 'Monday', '10:00', '11:00', 'ADA', '4th IS-C', '4th'),
+    ('303', 'Monday', '11:30', '12:30', 'BFCE', '4th IS-C', '4th'),
+    ('303', 'Monday', '12:30', '13:30', 'DBMS', '4th IS-C', '4th'),
+    ('303', 'Tuesday', '09:00', '10:00', 'DBMS', '4th IS-C', '4th'),
+    ('303', 'Tuesday', '10:00', '11:00', 'ADA', '4th IS-C', '4th'),
+    ('303', 'Tuesday', '11:30', '12:30', 'GT', '4th IS-C', '4th'),
+    ('303', 'Tuesday', '12:30', '13:30', 'AJ', '4th IS-C', '4th'),
+    ('303', 'Tuesday', '14:30', '15:30', 'GT Tutorial', '4th IS-C', '4th'),
+    ('303', 'Tuesday', '15:30', '16:30', 'GT Tutorial', '4th IS-C', '4th'),
+    ('303', 'Wednesday', '09:00', '10:00', 'ADA/AJ/DBMS Lab', '4th IS-C', '4th'),
+    ('303', 'Wednesday', '10:00', '11:00', 'ADA/AJ/DBMS Lab', '4th IS-C', '4th'),
+    ('303', 'Wednesday', '11:30', '12:30', 'ADA', '4th IS-C', '4th'),
+    ('303', 'Wednesday', '12:30', '13:30', 'AJ', '4th IS-C', '4th'),
+    ('303', 'Thursday', '09:00', '10:00', 'AJ', '4th IS-C', '4th'),
+    ('303', 'Thursday', '10:00', '11:00', 'GT', '4th IS-C', '4th'),
+    ('303', 'Thursday', '11:30', '12:30', 'ADA/AJ/DBMS Lab', '4th IS-C', '4th'),
+    ('303', 'Thursday', '12:30', '13:30', 'ADA/AJ/DBMS Lab', '4th IS-C', '4th'),
+    ('303', 'Friday', '09:00', '10:00', 'GIT&S', '4th IS-C', '4th'),
+    ('303', 'Friday', '10:00', '11:00', 'UHVC', '4th IS-C', '4th'),
+    ('303', 'Friday', '11:30', '12:30', 'DBMS', '4th IS-C', '4th'),
+    ('303', 'Friday', '12:30', '13:30', 'BFCE', '4th IS-C', '4th'),
+    ('303', 'Friday', '14:30', '15:30', 'ADA/AJ/DBMS Lab', '4th IS-C', '4th'),
+    ('303', 'Friday', '15:30', '16:30', 'ADA/AJ/DBMS Lab', '4th IS-C', '4th'),
+    ('304', 'Monday', '09:00', '10:00', 'BFCE', '4th IS-D', '4th'),
+    ('304', 'Monday', '10:00', '11:00', 'UHVC', '4th IS-D', '4th'),
+    ('304', 'Monday', '11:30', '12:30', 'ADA/AJ/DBMS Lab', '4th IS-D', '4th'),
+    ('304', 'Monday', '12:30', '13:30', 'ADA/AJ/DBMS Lab', '4th IS-D', '4th'),
+    ('304', 'Tuesday', '09:00', '10:00', 'GIT&S', '4th IS-D', '4th'),
+    ('304', 'Tuesday', '10:00', '11:00', 'ADA', '4th IS-D', '4th'),
+    ('304', 'Tuesday', '11:30', '12:30', 'AJ', '4th IS-D', '4th'),
+    ('304', 'Tuesday', '12:30', '13:30', 'GT', '4th IS-D', '4th'),
+    ('304', 'Wednesday', '10:00', '11:00', 'ADA', '4th IS-D', '4th'),
+    ('304', 'Wednesday', '11:30', '12:30', 'AJ', '4th IS-D', '4th'),
+    ('304', 'Wednesday', '12:30', '13:30', 'DBMS', '4th IS-D', '4th'),
+    ('304', 'Wednesday', '14:30', '15:30', 'GT Tutorial', '4th IS-D', '4th'),
+    ('304', 'Wednesday', '15:30', '16:30', 'GT Tutorial', '4th IS-D', '4th'),
+    ('304', 'Thursday', '09:00', '10:00', 'ADA/AJ/DBMS Lab', '4th IS-D', '4th'),
+    ('304', 'Thursday', '10:00', '11:00', 'ADA/AJ/DBMS Lab', '4th IS-D', '4th'),
+    ('304', 'Thursday', '11:30', '12:30', 'ADA', '4th IS-D', '4th'),
+    ('304', 'Thursday', '12:30', '13:30', 'DBMS', '4th IS-D', '4th'),
+    ('304', 'Friday', '09:00', '10:00', 'AJ', '4th IS-D', '4th'),
+    ('304', 'Friday', '10:00', '11:00', 'DBMS', '4th IS-D', '4th'),
+    ('304', 'Friday', '11:30', '12:30', 'ADA/AJ/DBMS Lab', '4th IS-D', '4th'),
+    ('304', 'Friday', '12:30', '13:30', 'ADA/AJ/DBMS Lab', '4th IS-D', '4th'),
+    ('304', 'Friday', '14:30', '15:30', 'GT', '4th IS-D', '4th'),
+    ('304', 'Friday', '15:30', '16:30', 'BFCE', '4th IS-D', '4th'),
+    ('405', 'Monday', '09:00', '10:00', 'OE', '6th CSE-A', '6th'),
+    ('405', 'Monday', '10:00', '11:00', 'PE', '6th CSE-A', '6th'),
+    ('405', 'Monday', '11:30', '12:30', 'DS', '6th CSE-A', '6th'),
+    ('405', 'Monday', '12:30', '13:30', 'ML', '6th CSE-A', '6th'),
+    ('405', 'Monday', '14:30', '15:30', 'IOT Lab (A1)', '6th CSE-A', '6th'),
+    ('405', 'Monday', '15:30', '16:30', 'ML Lab (A3)', '6th CSE-A', '6th'),
+    ('405', 'Tuesday', '09:00', '10:00', 'OE', '6th CSE-A', '6th'),
+    ('405', 'Tuesday', '10:00', '11:00', 'CC', '6th CSE-A', '6th'),
+    ('405', 'Tuesday', '11:30', '12:30', 'ML', '6th CSE-A', '6th'),
+    ('405', 'Tuesday', '12:30', '13:30', 'IOT', '6th CSE-A', '6th'),
+    ('405', 'Tuesday', '14:30', '15:30', 'PE', '6th CSE-A', '6th'),
+    ('405', 'Tuesday', '15:30', '16:30', 'IKS', '6th CSE-A', '6th'),
+    ('405', 'Wednesday', '09:00', '10:00', 'OE', '6th CSE-A', '6th'),
+    ('405', 'Wednesday', '10:00', '11:00', 'DS', '6th CSE-A', '6th'),
+    ('405', 'Wednesday', '11:30', '12:30', 'IOT', '6th CSE-A', '6th'),
+    ('405', 'Wednesday', '12:30', '13:30', 'PE', '6th CSE-A', '6th'),
+    ('405', 'Wednesday', '14:30', '15:30', 'CC Tutorial / DevOps Lab', '6th CSE-A', '6th'),
+    ('405', 'Wednesday', '15:30', '16:30', 'DS', '6th CSE-A', '6th'),
+    ('405', 'Thursday', '09:00', '10:00', 'CC (Sem Hall)', '6th CSE-A', '6th'),
+    ('405', 'Thursday', '10:00', '11:00', 'CC (Sem Hall)', '6th CSE-A', '6th'),
+    ('405', 'Thursday', '11:30', '12:30', 'IOT/ML Lab', '6th CSE-A', '6th'),
+    ('405', 'Thursday', '12:30', '13:30', 'IOT/ML Lab', '6th CSE-A', '6th'),
+    ('405', 'Friday', '09:00', '10:00', 'ML', '6th CSE-A', '6th'),
+    ('405', 'Friday', '10:00', '11:00', 'IOT', '6th CSE-A', '6th'),
+    ('405', 'Friday', '11:30', '12:30', 'IOT/ML Lab', '6th CSE-A', '6th'),
+    ('405', 'Friday', '12:30', '13:30', 'IOT/ML Lab', '6th CSE-A', '6th'),
+    ('405', 'Friday', '14:30', '15:30', 'CC Tutorial / DevOps Lab', '6th CSE-A', '6th'),
+    ('405', 'Friday', '15:30', '16:30', 'CC Tutorial / DevOps Lab', '6th CSE-A', '6th'),
+    ('406', 'Monday', '09:00', '10:00', 'OE', '6th CSE-B', '6th'),
+    ('406', 'Monday', '10:00', '11:00', 'PE', '6th CSE-B', '6th'),
+    ('406', 'Monday', '11:30', '12:30', 'IOT/ML/DevOps Lab', '6th CSE-B', '6th'),
+    ('406', 'Monday', '12:30', '13:30', 'IOT/ML/DevOps Lab', '6th CSE-B', '6th'),
+    ('406', 'Monday', '14:30', '15:30', 'IOT/ML/DevOps Lab', '6th CSE-B', '6th'),
+    ('406', 'Monday', '15:30', '16:30', 'IOT/ML/DevOps Lab', '6th CSE-B', '6th'),
+    ('406', 'Tuesday', '09:00', '10:00', 'OE', '6th CSE-B', '6th'),
+    ('406', 'Tuesday', '10:00', '11:00', 'DS', '6th CSE-B', '6th'),
+    ('406', 'Tuesday', '11:30', '12:30', 'EERP', '6th CSE-B', '6th'),
+    ('406', 'Tuesday', '12:30', '13:30', 'ML', '6th CSE-B', '6th'),
+    ('406', 'Tuesday', '14:30', '15:30', 'PE', '6th CSE-B', '6th'),
+    ('406', 'Tuesday', '15:30', '16:30', 'IOT', '6th CSE-B', '6th'),
+    ('406', 'Wednesday', '09:00', '10:00', 'OE', '6th CSE-B', '6th'),
+    ('406', 'Wednesday', '10:00', '11:00', 'CC', '6th CSE-B', '6th'),
+    ('406', 'Wednesday', '11:30', '12:30', 'IOT', '6th CSE-B', '6th'),
+    ('406', 'Wednesday', '12:30', '13:30', 'PE', '6th CSE-B', '6th'),
+    ('406', 'Wednesday', '14:30', '15:30', 'DS', '6th CSE-B', '6th'),
+    ('406', 'Wednesday', '15:30', '16:30', 'EERP', '6th CSE-B', '6th'),
+    ('406', 'Thursday', '09:00', '10:00', 'IOT/ML/DevOps Lab', '6th CSE-B', '6th'),
+    ('406', 'Thursday', '10:00', '11:00', 'IOT/ML/DevOps Lab', '6th CSE-B', '6th'),
+    ('406', 'Thursday', '11:30', '12:30', 'EERP', '6th CSE-B', '6th'),
+    ('406', 'Thursday', '12:30', '13:30', 'ML', '6th CSE-B', '6th'),
+    ('406', 'Thursday', '14:30', '15:30', 'CC Tutorial', '6th CSE-B', '6th'),
+    ('406', 'Thursday', '15:30', '16:30', 'CC Tutorial', '6th CSE-B', '6th'),
+    ('406', 'Friday', '09:00', '10:00', 'CC (Sem Hall)', '6th CSE-B', '6th'),
+    ('406', 'Friday', '10:00', '11:00', 'CC (Sem Hall)', '6th CSE-B', '6th'),
+    ('406', 'Friday', '11:30', '12:30', 'IOT', '6th CSE-B', '6th'),
+    ('406', 'Friday', '12:30', '13:30', 'DS', '6th CSE-B', '6th'),
+    ('406', 'Friday', '14:30', '15:30', 'ML', '6th CSE-B', '6th'),
+    ('406', 'Friday', '15:30', '16:30', 'IKS', '6th CSE-B', '6th'),
+    ('407', 'Monday', '09:00', '10:00', 'OE', '6th CSE-C', '6th'),
+    ('407', 'Monday', '10:00', '11:00', 'PE', '6th CSE-C', '6th'),
+    ('407', 'Monday', '11:30', '12:30', 'DevOps/CC Lab', '6th CSE-C', '6th'),
+    ('407', 'Monday', '12:30', '13:30', 'DevOps/CC Lab', '6th CSE-C', '6th'),
+    ('407', 'Monday', '14:30', '15:30', 'ML Lab (C2)', '6th CSE-C', '6th'),
+    ('407', 'Tuesday', '09:00', '10:00', 'OE', '6th CSE-C', '6th'),
+    ('407', 'Tuesday', '10:00', '11:00', 'CC', '6th CSE-C', '6th'),
+    ('407', 'Tuesday', '11:30', '12:30', 'IOT', '6th CSE-C', '6th'),
+    ('407', 'Tuesday', '12:30', '13:30', 'DS', '6th CSE-C', '6th'),
+    ('407', 'Tuesday', '14:30', '15:30', 'PE', '6th CSE-C', '6th'),
+    ('407', 'Tuesday', '15:30', '16:30', 'IKS', '6th CSE-C', '6th'),
+    ('407', 'Wednesday', '09:00', '10:00', 'OE', '6th CSE-C', '6th'),
+    ('407', 'Wednesday', '10:00', '11:00', 'IOT', '6th CSE-C', '6th'),
+    ('407', 'Wednesday', '11:30', '12:30', 'DS', '6th CSE-C', '6th'),
+    ('407', 'Wednesday', '12:30', '13:30', 'PE', '6th CSE-C', '6th'),
+    ('407', 'Wednesday', '14:30', '15:30', 'IOT/ML Lab', '6th CSE-C', '6th'),
+    ('407', 'Wednesday', '15:30', '16:30', 'IOT/ML Lab', '6th CSE-C', '6th'),
+    ('407', 'Thursday', '09:00', '10:00', 'CC (Sem Hall)', '6th CSE-C', '6th'),
+    ('407', 'Thursday', '10:00', '11:00', 'CC (Sem Hall)', '6th CSE-C', '6th'),
+    ('407', 'Thursday', '11:30', '12:30', 'ML', '6th CSE-C', '6th'),
+    ('407', 'Thursday', '12:30', '13:30', 'IOT', '6th CSE-C', '6th'),
+    ('407', 'Thursday', '14:30', '15:30', 'DS', '6th CSE-C', '6th'),
+    ('407', 'Thursday', '15:30', '16:30', 'ML', '6th CSE-C', '6th'),
+    ('407', 'Friday', '09:00', '10:00', 'IOT/ML Lab', '6th CSE-C', '6th'),
+    ('407', 'Friday', '10:00', '11:00', 'IOT/ML Lab', '6th CSE-C', '6th'),
+    ('407', 'Friday', '11:30', '12:30', 'DevOps/CC Lab', '6th CSE-C', '6th'),
+    ('407', 'Friday', '12:30', '13:30', 'DevOps/CC Lab', '6th CSE-C', '6th'),
+    ('407', 'Friday', '14:30', '15:30', 'ML', '6th CSE-C', '6th'),
+    ('408', 'Monday', '09:00', '10:00', 'OE', '6th CSE-D', '6th'),
+    ('408', 'Monday', '10:00', '11:00', 'PE', '6th CSE-D', '6th'),
+    ('408', 'Monday', '11:30', '12:30', 'ML', '6th CSE-D', '6th'),
+    ('408', 'Monday', '12:30', '13:30', 'Activity', '6th CSE-D', '6th'),
+    ('408', 'Monday', '14:30', '15:30', 'CC Tutorial', '6th CSE-D', '6th'),
+    ('408', 'Monday', '15:30', '16:30', 'CC Tutorial', '6th CSE-D', '6th'),
+    ('408', 'Tuesday', '09:00', '10:00', 'OE', '6th CSE-D', '6th'),
+    ('408', 'Tuesday', '10:00', '11:00', 'ML', '6th CSE-D', '6th'),
+    ('408', 'Tuesday', '11:30', '12:30', 'IOT/ML/DevOps Lab', '6th CSE-D', '6th'),
+    ('408', 'Tuesday', '12:30', '13:30', 'IOT/ML/DevOps Lab', '6th CSE-D', '6th'),
+    ('408', 'Tuesday', '14:30', '15:30', 'PE', '6th CSE-D', '6th'),
+    ('408', 'Tuesday', '15:30', '16:30', 'DS', '6th CSE-D', '6th'),
+    ('408', 'Wednesday', '09:00', '10:00', 'OE', '6th CSE-D', '6th'),
+    ('408', 'Wednesday', '10:00', '11:00', 'CC', '6th CSE-D', '6th'),
+    ('408', 'Wednesday', '11:30', '12:30', 'IOT', '6th CSE-D', '6th'),
+    ('408', 'Wednesday', '12:30', '13:30', 'PE', '6th CSE-D', '6th'),
+    ('408', 'Wednesday', '14:30', '15:30', 'DS', '6th CSE-D', '6th'),
+    ('408', 'Thursday', '09:00', '10:00', 'IOT', '6th CSE-D', '6th'),
+    ('408', 'Thursday', '10:00', '11:00', 'ML', '6th CSE-D', '6th'),
+    ('408', 'Thursday', '11:30', '12:30', 'DS', '6th CSE-D', '6th'),
+    ('408', 'Thursday', '12:30', '13:30', 'Activity', '6th CSE-D', '6th'),
+    ('408', 'Thursday', '14:30', '15:30', 'IOT/ML/DevOps Lab', '6th CSE-D', '6th'),
+    ('408', 'Thursday', '15:30', '16:30', 'IOT/ML/DevOps Lab', '6th CSE-D', '6th'),
+    ('408', 'Friday', '09:00', '10:00', 'CC (Sem Hall)', '6th CSE-D', '6th'),
+    ('408', 'Friday', '10:00', '11:00', 'CC (Sem Hall)', '6th CSE-D', '6th'),
+    ('408', 'Friday', '11:30', '12:30', 'IOT', '6th CSE-D', '6th'),
+    ('408', 'Friday', '12:30', '13:30', 'IKS', '6th CSE-D', '6th'),
+    ('408', 'Friday', '14:30', '15:30', 'IOT/ML/DevOps Lab', '6th CSE-D', '6th'),
+    ('408', 'Friday', '15:30', '16:30', 'IOT/ML/DevOps Lab', '6th CSE-D', '6th'),
+    ('305', 'Monday', '09:00', '10:00', 'OE', '6th IS-A', '6th'),
+    ('305', 'Monday', '10:00', '11:00', 'FSD', '6th IS-A', '6th'),
+    ('305', 'Monday', '11:30', '12:30', 'ML', '6th IS-A', '6th'),
+    ('305', 'Monday', '12:30', '13:30', 'BCT', '6th IS-A', '6th'),
+    ('305', 'Monday', '14:30', '15:30', 'FSD Lab', '6th IS-A', '6th'),
+    ('305', 'Monday', '15:30', '16:30', 'FSD Lab', '6th IS-A', '6th'),
+    ('305', 'Tuesday', '09:00', '10:00', 'OE', '6th IS-A', '6th'),
+    ('305', 'Tuesday', '10:00', '11:00', 'SA&DP', '6th IS-A', '6th'),
+    ('305', 'Tuesday', '11:30', '12:30', 'ML Lab', '6th IS-A', '6th'),
+    ('305', 'Tuesday', '12:30', '13:30', 'ML Lab', '6th IS-A', '6th'),
+    ('305', 'Tuesday', '14:30', '15:30', 'C&NS', '6th IS-A', '6th'),
+    ('305', 'Tuesday', '15:30', '16:30', 'CL', '6th IS-A', '6th'),
+    ('305', 'Wednesday', '09:00', '10:00', 'OE', '6th IS-A', '6th'),
+    ('305', 'Wednesday', '10:00', '11:00', 'IKS', '6th IS-A', '6th'),
+    ('305', 'Wednesday', '11:30', '12:30', 'FSD', '6th IS-A', '6th'),
+    ('305', 'Wednesday', '12:30', '13:30', 'ML', '6th IS-A', '6th'),
+    ('305', 'Wednesday', '14:30', '15:30', 'BCT', '6th IS-A', '6th'),
+    ('305', 'Wednesday', '15:30', '16:30', 'SA&DP', '6th IS-A', '6th'),
+    ('305', 'Thursday', '09:00', '10:00', 'C&NS', '6th IS-A', '6th'),
+    ('305', 'Thursday', '10:00', '11:00', 'BCT', '6th IS-A', '6th'),
+    ('305', 'Thursday', '11:30', '12:30', 'FSD', '6th IS-A', '6th'),
+    ('305', 'Thursday', '12:30', '13:30', 'ML', '6th IS-A', '6th'),
+    ('305', 'Friday', '10:00', '11:00', 'ML', '6th IS-A', '6th'),
+    ('305', 'Friday', '11:30', '12:30', 'SA&DP', '6th IS-A', '6th'),
+    ('305', 'Friday', '12:30', '13:30', 'C&NS', '6th IS-A', '6th'),
+    ('306', 'Monday', '09:00', '10:00', 'OE', '6th IS-B', '6th'),
+    ('306', 'Monday', '10:00', '11:00', 'IKS', '6th IS-B', '6th'),
+    ('306', 'Monday', '11:30', '12:30', 'FSD', '6th IS-B', '6th'),
+    ('306', 'Monday', '12:30', '13:30', 'BCT', '6th IS-B', '6th'),
+    ('306', 'Monday', '14:30', '15:30', 'ML', '6th IS-B', '6th'),
+    ('306', 'Monday', '15:30', '16:30', 'SA&DP', '6th IS-B', '6th'),
+    ('306', 'Tuesday', '09:00', '10:00', 'OE', '6th IS-B', '6th'),
+    ('306', 'Tuesday', '10:00', '11:00', 'FSD', '6th IS-B', '6th'),
+    ('306', 'Tuesday', '11:30', '12:30', 'ML', '6th IS-B', '6th'),
+    ('306', 'Tuesday', '12:30', '13:30', 'BCT', '6th IS-B', '6th'),
+    ('306', 'Tuesday', '14:30', '15:30', 'FSD Lab', '6th IS-B', '6th'),
+    ('306', 'Tuesday', '15:30', '16:30', 'FSD Lab', '6th IS-B', '6th'),
+    ('306', 'Wednesday', '09:00', '10:00', 'OE', '6th IS-B', '6th'),
+    ('306', 'Wednesday', '10:00', '11:00', 'SA&DP', '6th IS-B', '6th'),
+    ('306', 'Wednesday', '11:30', '12:30', 'ML Lab', '6th IS-B', '6th'),
+    ('306', 'Wednesday', '12:30', '13:30', 'ML Lab', '6th IS-B', '6th'),
+    ('306', 'Wednesday', '14:30', '15:30', 'C&NS', '6th IS-B', '6th'),
+    ('306', 'Wednesday', '15:30', '16:30', 'CL', '6th IS-B', '6th'),
+    ('306', 'Thursday', '10:00', '11:00', 'ML', '6th IS-B', '6th'),
+    ('306', 'Thursday', '11:30', '12:30', 'SA&DP', '6th IS-B', '6th'),
+    ('306', 'Thursday', '12:30', '13:30', 'C&NS', '6th IS-B', '6th'),
+    ('306', 'Friday', '09:00', '10:00', 'C&NS', '6th IS-B', '6th'),
+    ('306', 'Friday', '10:00', '11:00', 'BCT', '6th IS-B', '6th'),
+    ('306', 'Friday', '11:30', '12:30', 'FSD', '6th IS-B', '6th'),
+    ('306', 'Friday', '12:30', '13:30', 'ML', '6th IS-B', '6th'),
+    ('307', 'Monday', '09:00', '10:00', 'OE', '6th IS-C', '6th'),
+    ('307', 'Monday', '10:00', '11:00', 'ML', '6th IS-C', '6th'),
+    ('307', 'Monday', '11:30', '12:30', 'SA&DP', '6th IS-C', '6th'),
+    ('307', 'Monday', '12:30', '13:30', 'C&NS', '6th IS-C', '6th'),
+    ('307', 'Tuesday', '09:00', '10:00', 'OE', '6th IS-C', '6th'),
+    ('307', 'Tuesday', '10:00', '11:00', 'IKS', '6th IS-C', '6th'),
+    ('307', 'Tuesday', '11:30', '12:30', 'FSD', '6th IS-C', '6th'),
+    ('307', 'Tuesday', '12:30', '13:30', 'BCT', '6th IS-C', '6th'),
+    ('307', 'Tuesday', '14:30', '15:30', 'ML', '6th IS-C', '6th'),
+    ('307', 'Tuesday', '15:30', '16:30', 'SA&DP', '6th IS-C', '6th'),
+    ('307', 'Wednesday', '09:00', '10:00', 'OE', '6th IS-C', '6th'),
+    ('307', 'Wednesday', '10:00', '11:00', 'FSD', '6th IS-C', '6th'),
+    ('307', 'Wednesday', '11:30', '12:30', 'ML', '6th IS-C', '6th'),
+    ('307', 'Wednesday', '12:30', '13:30', 'BCT', '6th IS-C', '6th'),
+    ('307', 'Wednesday', '14:30', '15:30', 'FSD Lab', '6th IS-C', '6th'),
+    ('307', 'Wednesday', '15:30', '16:30', 'FSD Lab', '6th IS-C', '6th'),
+    ('307', 'Thursday', '10:00', '11:00', 'ML', '6th IS-C', '6th'),
+    ('307', 'Thursday', '11:30', '12:30', 'ML Lab', '6th IS-C', '6th'),
+    ('307', 'Thursday', '12:30', '13:30', 'ML Lab', '6th IS-C', '6th'),
+    ('307', 'Thursday', '14:30', '15:30', 'CL', '6th IS-C', '6th'),
+    ('307', 'Thursday', '15:30', '16:30', 'C&NS', '6th IS-C', '6th'),
+    ('307', 'Friday', '09:00', '10:00', 'SA&DP', '6th IS-C', '6th'),
+    ('307', 'Friday', '10:00', '11:00', 'FSD', '6th IS-C', '6th'),
+    ('307', 'Friday', '11:30', '12:30', 'BCT', '6th IS-C', '6th'),
+    ('307', 'Friday', '12:30', '13:30', 'C&NS', '6th IS-C', '6th'),
+    ('308', 'Monday', '09:00', '10:00', 'OE', '6th IS-D', '6th'),
+    ('308', 'Monday', '10:00', '11:00', 'CL', '6th IS-D', '6th'),
+    ('308', 'Monday', '11:30', '12:30', 'C&NS', '6th IS-D', '6th'),
+    ('308', 'Monday', '12:30', '13:30', 'IKS', '6th IS-D', '6th'),
+    ('308', 'Monday', '14:30', '15:30', 'ML', '6th IS-D', '6th'),
+    ('308', 'Monday', '15:30', '16:30', 'SA&DP', '6th IS-D', '6th'),
+    ('308', 'Tuesday', '09:00', '10:00', 'OE', '6th IS-D', '6th'),
+    ('308', 'Tuesday', '10:00', '11:00', 'BCT', '6th IS-D', '6th'),
+    ('308', 'Tuesday', '11:30', '12:30', 'C&NS', '6th IS-D', '6th'),
+    ('308', 'Tuesday', '12:30', '13:30', 'FSD', '6th IS-D', '6th'),
+    ('308', 'Wednesday', '09:00', '10:00', 'OE', '6th IS-D', '6th'),
+    ('308', 'Wednesday', '10:00', '11:00', 'BCT', '6th IS-D', '6th'),
+    ('308', 'Wednesday', '11:30', '12:30', 'FSD', '6th IS-D', '6th'),
+    ('308', 'Wednesday', '12:30', '13:30', 'ML', '6th IS-D', '6th'),
+    ('308', 'Thursday', '10:00', '11:00', 'ML', '6th IS-D', '6th'),
+    ('308', 'Thursday', '11:30', '12:30', 'FSD', '6th IS-D', '6th'),
+    ('308', 'Thursday', '12:30', '13:30', 'SA&DP', '6th IS-D', '6th'),
+    ('308', 'Thursday', '14:30', '15:30', 'FSD Lab', '6th IS-D', '6th'),
+    ('308', 'Thursday', '15:30', '16:30', 'FSD Lab', '6th IS-D', '6th'),
+    ('308', 'Friday', '09:00', '10:00', 'BCT', '6th IS-D', '6th'),
+    ('308', 'Friday', '10:00', '11:00', 'SA&DP', '6th IS-D', '6th'),
+    ('308', 'Friday', '11:30', '12:30', 'ML Lab', '6th IS-D', '6th'),
+    ('308', 'Friday', '12:30', '13:30', 'ML Lab', '6th IS-D', '6th'),
+    ('308', 'Friday', '14:30', '15:30', 'C&NS', '6th IS-D', '6th'),
+    ('308', 'Friday', '15:30', '16:30', 'ML', '6th IS-D', '6th'),
+    ('409', 'Monday', '09:00', '10:00', 'OE', '6th AIML-E', '6th'),
+    ('409', 'Monday', '10:00', '11:00', 'MC&ES', '6th AIML-E', '6th'),
+    ('409', 'Monday', '11:30', '12:30', 'PyTorch Lab (E1)', '6th AIML-E', '6th'),
+    ('409', 'Monday', '12:30', '13:30', 'PyTorch Lab (E1)', '6th AIML-E', '6th'),
+    ('409', 'Monday', '14:30', '15:30', 'DL', '6th AIML-E', '6th'),
+    ('409', 'Monday', '15:30', '16:30', 'IKS', '6th AIML-E', '6th'),
+    ('409', 'Tuesday', '09:00', '10:00', 'OE', '6th AIML-E', '6th'),
+    ('409', 'Tuesday', '10:00', '11:00', 'INS', '6th AIML-E', '6th'),
+    ('409', 'Tuesday', '11:30', '12:30', 'MC&ES/DL Lab', '6th AIML-E', '6th'),
+    ('409', 'Tuesday', '12:30', '13:30', 'MC&ES/DL Lab', '6th AIML-E', '6th'),
+    ('409', 'Tuesday', '14:30', '15:30', 'CV', '6th AIML-E', '6th'),
+    ('409', 'Tuesday', '15:30', '16:30', 'DM', '6th AIML-E', '6th'),
+    ('409', 'Wednesday', '09:00', '10:00', 'OE', '6th AIML-E', '6th'),
+    ('409', 'Wednesday', '10:00', '11:00', 'DL', '6th AIML-E', '6th'),
+    ('409', 'Wednesday', '11:30', '12:30', 'PyTorch Lab (E2)', '6th AIML-E', '6th'),
+    ('409', 'Wednesday', '12:30', '13:30', 'PyTorch Lab (E2)', '6th AIML-E', '6th'),
+    ('409', 'Wednesday', '14:30', '15:30', 'INS', '6th AIML-E', '6th'),
+    ('409', 'Wednesday', '15:30', '16:30', 'MC&ES', '6th AIML-E', '6th'),
+    ('409', 'Thursday', '09:00', '10:00', 'DM', '6th AIML-E', '6th'),
+    ('409', 'Thursday', '10:00', '11:00', 'INS', '6th AIML-E', '6th'),
+    ('409', 'Thursday', '11:30', '12:30', 'CV', '6th AIML-E', '6th'),
+    ('409', 'Thursday', '12:30', '13:30', 'MC&ES', '6th AIML-E', '6th'),
+    ('409', 'Thursday', '14:30', '15:30', 'DL', '6th AIML-E', '6th'),
+    ('409', 'Thursday', '15:30', '16:30', 'CV', '6th AIML-E', '6th'),
+    ('409', 'Friday', '09:00', '10:00', 'MC&ES/DL Lab', '6th AIML-E', '6th'),
+    ('409', 'Friday', '10:00', '11:00', 'MC&ES/DL Lab', '6th AIML-E', '6th'),
+    ('409', 'Friday', '11:30', '12:30', 'MC&ES/DL Lab', '6th AIML-E', '6th'),
+    ('409', 'Friday', '12:30', '13:30', 'MC&ES/DL Lab', '6th AIML-E', '6th'),
+    ('409', 'Friday', '14:30', '15:30', 'DM', '6th AIML-E', '6th'),
+    ('409', 'Friday', '15:30', '16:30', 'INS', '6th AIML-E', '6th'),
+    ('410', 'Monday', '09:00', '10:00', 'OE', '6th AIML-F', '6th'),
+    ('410', 'Monday', '10:00', '11:00', 'MC&ES', '6th AIML-F', '6th'),
+    ('410', 'Monday', '11:30', '12:30', 'MC&ES/DL Lab', '6th AIML-F', '6th'),
+    ('410', 'Monday', '12:30', '13:30', 'MC&ES/DL Lab', '6th AIML-F', '6th'),
+    ('410', 'Monday', '14:30', '15:30', 'INS', '6th AIML-F', '6th'),
+    ('410', 'Monday', '15:30', '16:30', 'DL', '6th AIML-F', '6th'),
+    ('410', 'Tuesday', '09:00', '10:00', 'OE', '6th AIML-F', '6th'),
+    ('410', 'Tuesday', '10:00', '11:00', 'DM', '6th AIML-F', '6th'),
+    ('410', 'Tuesday', '11:30', '12:30', 'INS', '6th AIML-F', '6th'),
+    ('410', 'Tuesday', '12:30', '13:30', 'DL', '6th AIML-F', '6th'),
+    ('410', 'Tuesday', '14:30', '15:30', 'PyTorch Lab (F2)', '6th AIML-F', '6th'),
+    ('410', 'Tuesday', '15:30', '16:30', 'PyTorch Lab (F2)', '6th AIML-F', '6th'),
+    ('410', 'Wednesday', '09:00', '10:00', 'OE', '6th AIML-F', '6th'),
+    ('410', 'Wednesday', '10:00', '11:00', 'MC&ES', '6th AIML-F', '6th'),
+    ('410', 'Wednesday', '11:30', '12:30', 'MC&ES/DL Lab', '6th AIML-F', '6th'),
+    ('410', 'Wednesday', '12:30', '13:30', 'MC&ES/DL Lab', '6th AIML-F', '6th'),
+    ('410', 'Wednesday', '14:30', '15:30', 'DM', '6th AIML-F', '6th'),
+    ('410', 'Wednesday', '15:30', '16:30', 'CV', '6th AIML-F', '6th'),
+    ('410', 'Thursday', '09:00', '10:00', 'DL', '6th AIML-F', '6th'),
+    ('410', 'Thursday', '10:00', '11:00', 'CV', '6th AIML-F', '6th'),
+    ('410', 'Thursday', '11:30', '12:30', 'DM', '6th AIML-F', '6th'),
+    ('410', 'Thursday', '12:30', '13:30', 'INS', '6th AIML-F', '6th'),
+    ('410', 'Thursday', '14:30', '15:30', 'MC&ES', '6th AIML-F', '6th'),
+    ('410', 'Thursday', '15:30', '16:30', 'IKS', '6th AIML-F', '6th'),
+    ('410', 'Friday', '09:00', '10:00', 'PyTorch Lab (F1)', '6th AIML-F', '6th'),
+    ('410', 'Friday', '10:00', '11:00', 'PyTorch Lab (F1)', '6th AIML-F', '6th'),
+    ('410', 'Friday', '11:30', '12:30', 'CV', '6th AIML-F', '6th'),
+    ('410', 'Friday', '12:30', '13:30', 'INS', '6th AIML-F', '6th'),
+    ('410', 'Friday', '14:30', '15:30', 'MC&ES/DL Lab', '6th AIML-F', '6th'),
+    ('410', 'Friday', '15:30', '16:30', 'MC&ES/DL Lab', '6th AIML-F', '6th')
+) as v(room_number, day, start_time, end_time, subject, section, semester)
+  on c.room_number = v.room_number;
 
-  ('403', 'North Campus', '4th Floor', 'CSE', 60, 'Projector, AC', 'occupied',
-   'DBMS', 'Dr. M R Rashmi', '10:00', '11:00', null),
 
-  ('404', 'North Campus', '4th Floor', 'CSE', 60, 'Projector, AC', 'vacant',
-   null, null, null, null, '11:30 AM'),
 
-  ('405', 'North Campus', '4th Floor', 'CSE', 60, 'Projector, Whiteboard', 'occupied',
-   'Machine Learning', 'Dr. V K Annapurna', '09:00', '10:00', null),
+-- ================================================================
+--  SUPABASE EDGE FUNCTION (cron job) — Auto-sync room statuses
+--  This runs every hour even when no one has the website open.
+--
+--  Setup steps:
+--  1. Supabase Dashboard → Edge Functions → New Function
+--  2. Name it: sync-room-status
+--  3. Paste the code below
+--  4. Supabase → Database → Extensions → enable pg_cron
+--  5. SQL Editor → run the cron schedule below
+-- ================================================================
 
-  ('301', 'North Campus', '3rd Floor', 'IS',  60, 'Projector, AC, Wi-Fi', 'vacant',
-   null, null, null, null, '2:30 PM'),
+-- Enable pg_cron extension (run once)
+-- create extension if not exists pg_cron;
 
-  ('305', 'North Campus', '3rd Floor', 'IS',  60, 'Projector, AC', 'occupied',
-   'Full Stack Development', 'Ms. Bhavani R', '10:00', '11:00', null),
+-- Schedule: run every 5 minutes
+-- select cron.schedule(
+--   'sync-room-status',
+--   '*/5 * * * *',
+--   $$
+--   select net.http_post(
+--     url := 'https://YOUR_PROJECT_ID.supabase.co/functions/v1/sync-room-status',
+--     headers := '{"Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb
+--   );
+--   $$
+-- );
 
-  ('MB-1', 'Main Block', 'Ground Floor', 'CSE', 60, 'Projector, AC', 'vacant',
-   null, null, null, null, 'No class today'),
+-- ── Edge Function code (save as sync-room-status/index.ts) ────
+/*
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-  ('MB-5', 'Main Block', 'Ground Floor', 'AI & ML', 60, 'Projector, AC, Smart Board', 'occupied',
-   'Computer Vision', 'Mrs. Harshitha H.S', '09:00', '10:00', null);
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+)
+
+const SLOTS = [
+  { start: '09:00:00', end: '10:00:00' },
+  { start: '10:00:00', end: '11:00:00' },
+  { start: '11:30:00', end: '12:30:00' },
+  { start: '12:30:00', end: '13:30:00' },
+  { start: '14:30:00', end: '15:30:00' },
+  { start: '15:30:00', end: '16:30:00' },
+  { start: '16:30:00', end: '17:30:00' },
+]
+
+Deno.serve(async () => {
+  const now   = new Date()
+  const day   = now.toLocaleDateString('en-US', { weekday: 'long' })
+  const hh    = String(now.getHours()).padStart(2, '0')
+  const mm    = String(now.getMinutes()).padStart(2, '0')
+  const curr  = `${hh}:${mm}:00`
+
+  const isWeekend = day === 'Saturday' || day === 'Sunday'
+  const isBreak   = curr >= '11:00:00' && curr < '11:30:00'
+  const isLunch   = curr >= '13:30:00' && curr < '14:30:00'
+  const offHours  = curr < '09:00:00' || curr >= '17:30:00'
+
+  if (isWeekend || isBreak || isLunch || offHours) {
+    await supabase.from('classrooms').update({
+      status: 'vacant', current_subject: null,
+      current_faculty: null, session_start: null, session_end: null
+    }).neq('id', '00000000-0000-0000-0000-000000000000')
+    return new Response('All rooms marked vacant')
+  }
+
+  const activeSlot = SLOTS.find(s => curr >= s.start && curr < s.end)
+  if (!activeSlot) return new Response('No active slot')
+
+  const { data: schedules } = await supabase
+    .from('schedules')
+    .select('room_id, subject, start_time, end_time')
+    .eq('day', day)
+    .eq('start_time', activeSlot.start)
+
+  const busyIds = new Set(schedules?.map(s => s.room_id) ?? [])
+  const { data: rooms } = await supabase.from('classrooms').select('id')
+
+  const updates = (rooms ?? []).map(room => {
+    const sched = schedules?.find(s => s.room_id === room.id)
+    if (busyIds.has(room.id) && sched) {
+      const endMins = parseInt(activeSlot.end) * 60
+      const curMins = parseInt(hh) * 60 + parseInt(mm)
+      const freeSoon = (endMins - curMins) <= 30
+      return {
+        id: room.id,
+        status: freeSoon ? 'free_soon' : 'occupied',
+        current_subject: sched.subject,
+        session_start: sched.start_time,
+        session_end: sched.end_time,
+      }
+    }
+    return { id: room.id, status: 'vacant', current_subject: null,
+             current_faculty: null, session_start: null, session_end: null }
+  })
+
+  await supabase.from('classrooms').upsert(updates)
+  return new Response(`Synced ${updates.length} rooms at ${curr}`)
+})
+*/
