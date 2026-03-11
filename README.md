@@ -1,4 +1,5 @@
 # NIE ClassPulse — Full Setup Guide
+## From zero to deployed in 6 steps
 
 ---
 
