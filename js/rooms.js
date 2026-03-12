@@ -3,7 +3,6 @@
 // ============================================================
 import { supabase } from './supabase.js';
 
-// ── Fetch ALL classrooms ─────────────────────────────────────
 export async function getAllRooms() {
   const { data, error } = await supabase
     .from('classrooms')
@@ -13,7 +12,6 @@ export async function getAllRooms() {
   return data;
 }
 
-// ── Fetch one room by ID ─────────────────────────────────────
 export async function getRoomById(id) {
   const { data, error } = await supabase
     .from('classrooms')
@@ -24,33 +22,27 @@ export async function getRoomById(id) {
   return data;
 }
 
-// ── Search by room number, building, dept, section ───────────
 export async function searchRooms(query) {
   const { data, error } = await supabase
     .from('classrooms')
     .select('*')
     .or(
       `room_number.ilike.%${query}%,` +
-      `building.ilike.%${query}%,` +
-      `department.ilike.%${query}%,` +
-      `section.ilike.%${query}%`
+      `building.ilike.%${query}%`
     );
   if (error) throw error;
   return data;
 }
 
-// ── Filter rooms ─────────────────────────────────────────────
-export async function filterRooms({ building, department, status }) {
+export async function filterRooms({ building, status }) {
   let q = supabase.from('classrooms').select('*');
-  if (building   && building   !== 'all') q = q.eq('building', building);
-  if (department && department !== 'all') q = q.eq('department', department);
-  if (status     && status     !== 'all') q = q.eq('status', status);
+  if (building && building !== 'all') q = q.eq('building', building);
+  if (status   && status   !== 'all') q = q.eq('status', status);
   const { data, error } = await q.order('room_number');
   if (error) throw error;
   return data;
 }
 
-// ── Dashboard stat counts ────────────────────────────────────
 export async function getRoomStats() {
   const { data, error } = await supabase
     .from('classrooms')
@@ -60,35 +52,36 @@ export async function getRoomStats() {
     total:    data.length,
     vacant:   data.filter(r => r.status === 'vacant').length,
     occupied: data.filter(r => r.status === 'occupied').length,
-    freeSoon: data.filter(r => r.status === 'free_soon').length,
+    freeSoon: 0,
   };
 }
 
-// ── Update room status (teacher / CR only) ───────────────────
+// ── Update room status — FIXED: removed .single() which caused JSON error
 export async function updateRoomStatus(roomId, status, sessionInfo = null) {
   const updates = { status, updated_at: new Date().toISOString() };
-  if (sessionInfo && status === 'occupied') {
+
+  if (status === 'occupied' && sessionInfo) {
     updates.current_subject = sessionInfo.subject || null;
     updates.current_faculty = sessionInfo.faculty || null;
-    updates.session_start   = sessionInfo.start   || null;
-    updates.session_end     = sessionInfo.end      || null;
+    updates.session_start   = sessionInfo.start   ? sessionInfo.start + ':00' : null;
+    updates.session_end     = sessionInfo.end      ? sessionInfo.end   + ':00' : null;
   } else {
     updates.current_subject = null;
     updates.current_faculty = null;
     updates.session_start   = null;
     updates.session_end     = null;
   }
-  const { data, error } = await supabase
+
+  // NO .single() — that's what caused "Cannot coerce to single JSON object"
+  const { error } = await supabase
     .from('classrooms')
     .update(updates)
-    .eq('id', roomId)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+    .eq('id', roomId);
+
+  if (error) throw new Error(error.message);
+  return true;
 }
 
-// ── Real-time: fires callback whenever any classroom updates ─
 export function subscribeToRoomChanges(callback) {
   return supabase
     .channel('classrooms-realtime')
@@ -100,7 +93,6 @@ export function subscribeToRoomChanges(callback) {
     .subscribe();
 }
 
-// ── Today's schedule for a specific room ─────────────────────
 export async function getRoomSchedule(roomId) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const { data, error } = await supabase
