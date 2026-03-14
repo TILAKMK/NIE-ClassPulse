@@ -177,15 +177,23 @@ function attachCardListeners() {
   });
 }
 
-// FIX: Realtime — reload ALL rooms from DB on any change, not just patch cache
+// Realtime + polling fallback every 15 seconds
 function listenRealtime() {
+  // Realtime subscription
   subscribeToRoomChanges(async () => {
-    // Re-fetch everything fresh from Supabase
     const fresh = await getAllRooms();
     allRoomsCache = fresh;
     renderRooms(fresh);
     loadStats();
   });
+
+  // Polling fallback — refresh every 15 seconds regardless of realtime
+  setInterval(async () => {
+    const fresh = await getAllRooms();
+    allRoomsCache = fresh;
+    renderRooms(fresh);
+    loadStats();
+  }, 15000);
 }
 
 function bindEvents() {
