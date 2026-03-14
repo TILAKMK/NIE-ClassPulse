@@ -1,10 +1,9 @@
 // ============================================================
-//  js/dashboard.js  —  Today-only live dashboard
+//  js/dashboard.js  —  Fixed: realtime, floor tabs, staff label
 // ============================================================
-import { initScheduler }                               from './scheduler.js';
-import { getAllRooms, getRoomStats,
-         subscribeToRoomChanges }                      from './rooms.js';
-import { getUser, getUserRole, getDisplayEmail, logout }                from './auth.js';
+import { initScheduler }                                    from './scheduler.js';
+import { getAllRooms, getRoomStats, subscribeToRoomChanges } from './rooms.js';
+import { getUser, getDisplayEmail, logout }                  from './auth.js';
 
 const grid           = document.getElementById('room-grid');
 const statsTotal     = document.getElementById('stat-total');
@@ -19,7 +18,8 @@ const authBtn        = document.getElementById('auth-btn');
 const userGreeting   = document.getElementById('user-greeting');
 const todayLabel     = document.getElementById('today-label');
 
-let allRoomsCache = [];
+let allRoomsCache  = [];
+let activeFloor    = 'all'; // 'all' | 'Ground Floor' | '1st Floor' | '2nd Floor' | '3rd Floor'
 
 function floorLabel(room_number) {
   const n = String(room_number);
@@ -38,8 +38,8 @@ async function init() {
     });
   }
   await loadUser();
-  await loadStats();
   await loadRooms();
+  await loadStats();
   initScheduler();
   bindEvents();
   listenRealtime();
@@ -48,9 +48,9 @@ async function init() {
 async function loadUser() {
   const user = await getUser();
   if (user) {
-    // Show the email they typed (not the hidden staff account email)
     const displayEmail = getDisplayEmail() || user.email;
-    if (userGreeting) userGreeting.textContent = `${displayEmail} · Staff`;
+    // FIX: show "Logged In" instead of "Staff"
+    if (userGreeting) userGreeting.textContent = `${displayEmail} · Logged In`;
     if (authBtn) {
       authBtn.textContent = 'Logout';
       authBtn.onclick = e => { e.preventDefault(); logout(); };
@@ -95,9 +95,10 @@ function renderRooms(rooms) {
   const status   = filterStatus?.value   ?? 'all';
 
   let filtered = rooms;
-  if (q)                filtered = filtered.filter(r => r.room_number.toLowerCase().includes(q));
+  if (q)                  filtered = filtered.filter(r => r.room_number.toLowerCase().includes(q));
   if (building !== 'all') filtered = filtered.filter(r => r.building === building);
   if (status   !== 'all') filtered = filtered.filter(r => r.status   === status);
+  if (activeFloor !== 'all') filtered = filtered.filter(r => floorLabel(r.room_number) === activeFloor);
 
   if (roomCount) roomCount.textContent = `(${filtered.length} rooms)`;
 
@@ -121,9 +122,7 @@ function fmtTime(t) {
 
 function buildRoomCard(room) {
   const isVacant   = room.status === 'vacant';
-  // treat free_soon as occupied for display
   const isOccupied = !isVacant;
-
   const bar   = isVacant ? 'bg-green-500' : 'bg-red-500';
   const badge = isVacant
     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -149,7 +148,7 @@ function buildRoomCard(room) {
        </div>`;
 
   return `
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-shadow room-card" data-id="${room.id}">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-shadow room-card cursor-pointer" data-id="${room.id}">
       <div class="h-2 ${bar}"></div>
       <div class="p-6">
         <div class="flex justify-between items-start mb-4">
@@ -170,28 +169,44 @@ function buildRoomCard(room) {
 }
 
 function attachCardListeners() {
-  document.querySelectorAll('.view-schedule-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      window.location.href = `/pages/room-detail.html?id=${btn.dataset.id}`;
+  document.querySelectorAll('.view-schedule-btn, .room-card').forEach(el => {
+    el.addEventListener('click', e => {
+      const id = el.dataset.id;
+      if (id) window.location.href = `/pages/room-detail.html?id=${id}`;
     });
   });
 }
 
+// FIX: Realtime — reload ALL rooms from DB on any change, not just patch cache
 function listenRealtime() {
-  subscribeToRoomChanges(updated => {
-    const idx = allRoomsCache.findIndex(r => r.id === updated.id);
-    if (idx !== -1) allRoomsCache[idx] = { ...allRoomsCache[idx], ...updated };
-    renderRooms(allRoomsCache);
+  subscribeToRoomChanges(async () => {
+    // Re-fetch everything fresh from Supabase
+    const fresh = await getAllRooms();
+    allRoomsCache = fresh;
+    renderRooms(fresh);
     loadStats();
   });
 }
 
 function bindEvents() {
-  searchBtn?.addEventListener('click', () => renderRooms(allRoomsCache));
+  searchBtn?.addEventListener('click',   () => renderRooms(allRoomsCache));
   searchInput?.addEventListener('keydown', e => e.key === 'Enter' && renderRooms(allRoomsCache));
   filterBuilding?.addEventListener('change', () => renderRooms(allRoomsCache));
-  filterStatus?.addEventListener('change', () => renderRooms(allRoomsCache));
+  filterStatus?.addEventListener('change',   () => renderRooms(allRoomsCache));
+
+  // Floor tab clicks
+  document.querySelectorAll('.floor-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      activeFloor = tab.dataset.floor;
+      document.querySelectorAll('.floor-tab').forEach(t => {
+        t.classList.remove('bg-primary', 'text-white');
+        t.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+      });
+      tab.classList.add('bg-primary', 'text-white');
+      tab.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+      renderRooms(allRoomsCache);
+    });
+  });
 }
 
 init();

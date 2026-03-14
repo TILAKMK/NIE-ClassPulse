@@ -132,6 +132,25 @@
     </select>
   </div>
 
+  <!-- Floor Tabs -->
+  <div class="flex flex-wrap gap-2 mb-5">
+    <button class="floor-tab bg-primary text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="all">
+      🏢 All Floors
+    </button>
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="Ground Floor">
+      G Ground Floor
+    </button>
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="1st Floor">
+      1 First Floor
+    </button>
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="2nd Floor">
+      2 Second Floor
+    </button>
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="3rd Floor">
+      3 Third Floor
+    </button>
+  </div>
+
   <!-- Room Grid -->
   <div class="flex items-center gap-2 mb-4">
     <span class="material-symbols-outlined text-primary">grid_view</span>
@@ -142,6 +161,73 @@
     <div class="col-span-full flex justify-center py-12"><div class="loader"></div></div>
   </div>
 </main>
+
+<!-- Footer -->
+<footer class="bg-slate-900 dark:bg-black text-white mt-16 pb-20 md:pb-0">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="bg-primary p-2 rounded-xl">
+            <span class="material-symbols-outlined text-white text-2xl">pulse_alert</span>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold">NIE ClassPulse</h2>
+            <p class="text-xs text-slate-400">Live Classroom Tracker</p>
+          </div>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Real-time classroom availability tracker for The National Institute of Engineering, Mysuru.
+          Know which room is free before you walk there.
+        </p>
+        <div class="mt-4 flex items-center gap-2">
+          <span class="pulse-dot"></span>
+          <span class="text-green-400 text-xs font-semibold">Live • Updates every 60 seconds</span>
+        </div>
+      </div>
+
+      <!-- About NIE -->
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Institution</h3>
+        <p class="text-white font-semibold text-base mb-1">The National Institute of Engineering</p>
+        <p class="text-slate-400 text-sm">Manandavadi Road, Mysuru — 570 008</p>
+        <p class="text-slate-400 text-sm mt-1">Karnataka, India</p>
+        <div class="mt-4 space-y-1 text-sm text-slate-400">
+          <p>🏛️ Est. 1946 · Autonomous Institution</p>
+          <p>📚 Affiliated to VTU, Belagavi</p>
+        </div>
+      </div>
+
+      <!-- Developers -->
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Built By</h3>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">T</div>
+            <div>
+              <p class="text-white font-semibold text-sm">Tilak Bhat</p>
+              <p class="text-slate-400 text-xs">Developer · NIE CSE</p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 p-3 bg-slate-800 rounded-xl">
+          <p class="text-xs text-slate-400 mb-1">🚀 Launched</p>
+          <p class="text-white text-sm font-semibold">March 2026</p>
+          <p class="text-xs text-slate-500 mt-1">Built with Supabase · Vercel · Tailwind CSS</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="mt-10 pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
+      <p class="text-slate-500 text-xs">© 2026 NIE ClassPulse · The National Institute of Engineering, Mysuru</p>
+      <p class="text-slate-600 text-xs">Made with ❤️ for NIE students & faculty</p>
+    </div>
+  </div>
+</footer>
 
 <!-- Mobile Nav -->
 <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 md:hidden z-50">
