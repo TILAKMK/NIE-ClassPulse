@@ -11,7 +11,6 @@
       darkMode:'class',
       theme:{ extend:{ colors:{ primary:"#137fec" }, fontFamily:{ display:["Lexend"] } } }
     }
-    // Apply saved theme immediately to avoid flash
     if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
   </script>
   <title>Room Schedule — NIE ClassPulse</title>
@@ -21,6 +20,16 @@
     @keyframes spin{ to{ transform:rotate(360deg); } }
     .pulse-dot{ width:8px;height:8px;background:#ef4444;border-radius:50%;animation:pdot 1.2s ease-in-out infinite;display:inline-block; }
     @keyframes pdot{ 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.5)} }
+    /* Fix time input in dark mode */
+    input[type="time"] {
+      color-scheme: light;
+    }
+    .dark input[type="time"] {
+      color-scheme: dark;
+      background-color: #334155;
+      color: #f1f5f9;
+      border-color: #475569;
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
@@ -34,12 +43,13 @@
     </a>
     <div class="flex items-center gap-3">
       <div class="flex items-center gap-2">
-        <div class="bg-primary p-1.5 rounded-lg text-white">
+        <!-- NEW LOGO -->
+        <img src="/logo.png" alt="NIE ClassPulse" class="h-9 w-9 rounded-xl object-cover" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'"/>
+        <div id="logo-fallback" style="display:none" class="bg-primary p-1.5 rounded-lg text-white">
           <span class="material-symbols-outlined text-sm">pulse_alert</span>
         </div>
         <span class="font-bold">NIE ClassPulse</span>
       </div>
-      <!-- Theme toggle -->
       <button id="theme-btn" onclick="toggleTheme()"
               class="size-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
         <span id="theme-icon" class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">dark_mode</span>
@@ -61,7 +71,6 @@
           <p id="room-location" class="text-slate-500 dark:text-slate-400 mt-1">—</p>
           <div id="status-badge" class="mt-3"></div>
 
-          <!-- Live current class info -->
           <div id="current-session" class="hidden mt-4 p-4 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-xl">
             <div class="flex items-center gap-2 mb-2">
               <span class="pulse-dot"></span>
@@ -73,22 +82,27 @@
           </div>
         </div>
 
-        <!-- Editor panel — teachers/CRs only -->
+        <!-- Editor panel -->
         <div id="editor-panel" class="hidden bg-slate-50 dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 w-full md:min-w-72 md:max-w-xs">
           <p class="text-xs text-slate-500 uppercase font-bold mb-3">Override Room Status</p>
 
-          <!-- VACANT → Mark Occupied -->
           <div id="panel-occupy" class="hidden space-y-3">
             <p class="text-xs text-slate-500 mb-2">Room is free — assign it to your class:</p>
             <input id="inp-subject" placeholder="Subject name *" type="text"
-                   class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary outline-none"/>
+                   class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
             <input id="inp-faculty" placeholder="Faculty name (optional)" type="text"
-                   class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary outline-none"/>
+                   class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
             <div class="flex gap-2">
-              <input id="inp-start" type="time"
-                     class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary outline-none"/>
-              <input id="inp-end" type="time"
-                     class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 focus:ring-2 focus:ring-primary outline-none"/>
+              <div class="flex-1">
+                <label class="text-xs text-slate-400 mb-1 block">Start Time</label>
+                <input id="inp-start" type="time"
+                       class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
+              </div>
+              <div class="flex-1">
+                <label class="text-xs text-slate-400 mb-1 block">End Time</label>
+                <input id="inp-end" type="time"
+                       class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
+              </div>
             </div>
             <button id="btn-occupy"
                     class="w-full bg-red-500 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2">
@@ -96,7 +110,6 @@
             </button>
           </div>
 
-          <!-- OCCUPIED → Mark Vacant (cancel class) -->
           <div id="panel-vacate" class="hidden">
             <p class="text-xs text-slate-500 mb-3">Class cancelled? Free this room:</p>
             <button id="btn-vacate"
@@ -144,12 +157,10 @@
 
 <script>
   function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.classList.toggle('dark');
+    const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     document.getElementById('theme-icon').textContent = isDark ? 'light_mode' : 'dark_mode';
   }
-  // Set correct icon on load
   window.addEventListener('DOMContentLoaded', () => {
     const isDark = document.documentElement.classList.contains('dark');
     document.getElementById('theme-icon').textContent = isDark ? 'light_mode' : 'dark_mode';
@@ -178,6 +189,19 @@
     return `${h > 12 ? h-12 : h === 0 ? 12 : h}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM':'AM'}`;
   }
 
+  // IST time string
+  function nowTimeStr() {
+    const now = new Date();
+    const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000));
+    return `${String(ist.getHours()).padStart(2,'0')}:${String(ist.getMinutes()).padStart(2,'0')}`;
+  }
+
+  function todayIST() {
+    const now = new Date();
+    const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000));
+    return ist.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+
   async function fetchAllSchedules(roomId) {
     const { data, error } = await supabase
       .from('schedules')
@@ -188,39 +212,47 @@
     return data;
   }
 
-  // Watch for real-time status changes and update current session live
+  // FIXED: re-fetch room fully from DB on any realtime change
   function subscribeToRoom(roomId) {
     supabase.channel('room-detail-' + roomId)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'classrooms',
         filter: `id=eq.${roomId}`
-      }, (payload) => {
-        const room = payload.new;
-        updateCurrentSession(room);
-        // Update status badge
-        const badge = document.getElementById('status-badge');
-        const statusMap = {
-          vacant:   { label:'Vacant',   cls:'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-          occupied: { label:'Occupied', cls:'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-        };
-        const s = statusMap[room.status] ?? { label: room.status, cls:'bg-slate-100 text-slate-700' };
-        badge.innerHTML = `<span class="${s.cls} text-sm font-bold px-3 py-1 rounded-full uppercase">${s.label}</span>`;
+      }, async () => {
+        // Re-fetch fresh from DB instead of using stale payload
+        const fresh = await getRoomById(roomId);
+        refreshRoomUI(fresh);
       })
       .subscribe();
   }
 
-  function updateCurrentSession(room) {
+  function refreshRoomUI(room) {
+    // Update badge
+    const badge = document.getElementById('status-badge');
+    const isVacant = room.status === 'vacant';
+    const badgeCls = isVacant
+      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+    badge.innerHTML = `<span class="${badgeCls} text-sm font-bold px-3 py-1 rounded-full uppercase">${isVacant ? 'Vacant' : 'Occupied'}</span>`;
+
+    // Update session info
     const sessionEl = document.getElementById('current-session');
-    if ((room.status === 'occupied') && room.current_subject) {
+    if (!isVacant && room.current_subject) {
       sessionEl.classList.remove('hidden');
       document.getElementById('cs-subject').textContent = room.current_subject;
-      // Show section from schedules
-      const sectionEl = document.getElementById('cs-section');
-      sectionEl.textContent = room.current_section ? `${room.current_section}` : '';
+      document.getElementById('cs-section').textContent = room.section ?? '';
       document.getElementById('cs-time').textContent =
         room.session_start ? `${fmtTime(room.session_start)} – ${fmtTime(room.session_end)}` : '';
     } else {
       sessionEl.classList.add('hidden');
+    }
+
+    // Swap editor panel buttons
+    const panelOccupy = document.getElementById('panel-occupy');
+    const panelVacate = document.getElementById('panel-vacate');
+    if (panelOccupy && panelVacate) {
+      panelOccupy.classList.toggle('hidden', !isVacant);
+      panelVacate.classList.toggle('hidden', isVacant);
     }
   }
 
@@ -238,48 +270,16 @@
       document.getElementById('room-number').textContent   = room.room_number;
       document.getElementById('room-location').textContent = `${room.building} • ${room.floor}`;
 
-      // Status badge
-      const badge = document.getElementById('status-badge');
-      const statusMap = {
-        vacant:   { label:'Vacant',   cls:'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-        occupied: { label:'Occupied', cls:'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-      };
-      const s = statusMap[room.status] ?? { label: room.status, cls:'bg-slate-100 text-slate-700' };
-      badge.innerHTML = `<span class="${s.cls} text-sm font-bold px-3 py-1 rounded-full uppercase">${s.label}</span>`;
+      refreshRoomUI(room);
 
-      // Current class — find section from today's schedule
-      if (room.status === 'occupied' && room.current_subject) {
-        document.getElementById('current-session').classList.remove('hidden');
-        document.getElementById('cs-subject').textContent = room.current_subject;
-        // Find matching schedule entry to get section
-        const today = new Date().toLocaleDateString('en-US', { weekday:'long' });
-        const now = nowTimeStr();
-        const matching = allSchedules.find(s =>
-          s.day === today &&
-          !isLab(s.subject) &&
-          now >= s.start_time.substring(0,5) &&
-          now < s.end_time.substring(0,5)
-        );
-        document.getElementById('cs-section').textContent =
-          matching?.section ? matching.section : (room.section ?? '');
-        document.getElementById('cs-time').textContent =
-          room.session_start ? `${fmtTime(room.session_start)} – ${fmtTime(room.session_end)}` : '';
-      }
-
-      // Editor panel
       if (role === 'teacher' || role === 'cr') {
         document.getElementById('editor-panel').classList.remove('hidden');
-        if (room.status === 'vacant') {
-          document.getElementById('panel-occupy').classList.remove('hidden');
-        } else {
-          document.getElementById('panel-vacate').classList.remove('hidden');
-        }
         bindEditor(room);
       }
 
       renderTodaySchedule(allSchedules);
       renderWeekSchedule(allSchedules);
-      subscribeToRoom(roomId); // live updates
+      subscribeToRoom(roomId);
 
     } catch (err) {
       console.error(err);
@@ -287,14 +287,9 @@
     }
   }
 
-  function nowTimeStr() {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-  }
-
   function renderTodaySchedule(allSchedules) {
     const el = document.getElementById('schedule-list');
-    const today = new Date().toLocaleDateString('en-US', { weekday:'long' });
+    const today = todayIST();
     const now = nowTimeStr();
     const todaySlots = allSchedules.filter(s => s.day === today && !isLab(s.subject));
 
@@ -325,7 +320,7 @@
 
   function renderWeekSchedule(allSchedules) {
     const el = document.getElementById('week-schedule');
-    const today = new Date().toLocaleDateString('en-US', { weekday:'long' });
+    const today = todayIST();
     const now = nowTimeStr();
 
     const byDay = {};
@@ -370,28 +365,47 @@
 
   function bindEditor(room) {
     const msg = document.getElementById('update-msg');
-    if (room.status === 'vacant') {
-      document.getElementById('btn-occupy').addEventListener('click', async () => {
-        const subject = document.getElementById('inp-subject').value.trim();
-        const faculty = document.getElementById('inp-faculty').value.trim();
-        const start   = document.getElementById('inp-start').value;
-        const end     = document.getElementById('inp-end').value;
-        if (!subject) { msg.style.color='red'; msg.textContent='⚠️ Enter a subject name.'; return; }
-        try {
-          await updateRoomStatus(room.id, 'occupied', { subject, faculty, start, end });
-          msg.style.color='green'; msg.textContent='✅ Room marked occupied!';
-          setTimeout(() => location.reload(), 800);
-        } catch(e) { msg.style.color='red'; msg.textContent=e.message; }
-      });
-    } else {
-      document.getElementById('btn-vacate').addEventListener('click', async () => {
-        try {
-          await updateRoomStatus(room.id, 'vacant');
-          msg.style.color='green'; msg.textContent='✅ Class cancelled — room is now vacant!';
-          setTimeout(() => location.reload(), 800);
-        } catch(e) { msg.style.color='red'; msg.textContent=e.message; }
-      });
-    }
+
+    document.getElementById('btn-occupy')?.addEventListener('click', async () => {
+      const subject = document.getElementById('inp-subject').value.trim();
+      const faculty = document.getElementById('inp-faculty').value.trim();
+      const start   = document.getElementById('inp-start').value;
+      const end     = document.getElementById('inp-end').value;
+      if (!subject) { msg.style.color='red'; msg.textContent='⚠️ Enter a subject name.'; return; }
+
+      const btn = document.getElementById('btn-occupy');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      try {
+        await updateRoomStatus(room.id, 'occupied', { subject, faculty, start, end });
+        msg.style.color = 'green';
+        msg.textContent = '✅ Room marked occupied!';
+        // Reload page after short delay so UI refreshes fully
+        setTimeout(() => location.reload(), 1000);
+      } catch(e) {
+        msg.style.color = 'red';
+        msg.textContent = e.message;
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-base">lock</span>Mark as Occupied';
+      }
+    });
+
+    document.getElementById('btn-vacate')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-vacate');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      try {
+        await updateRoomStatus(room.id, 'vacant');
+        msg.style.color = 'green';
+        msg.textContent = '✅ Room is now vacant!';
+        setTimeout(() => location.reload(), 1000);
+      } catch(e) {
+        msg.style.color = 'red';
+        msg.textContent = e.message;
+        btn.disabled = false;
+      }
+    });
   }
 </script>
 </body>
