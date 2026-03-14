@@ -177,7 +177,6 @@ function attachCardListeners() {
   });
 }
 
-// Realtime + polling fallback every 15 seconds
 function listenRealtime() {
   // Realtime subscription
   subscribeToRoomChanges(async () => {
@@ -187,13 +186,15 @@ function listenRealtime() {
     loadStats();
   });
 
-  // Polling fallback — refresh every 15 seconds regardless of realtime
+  // Polling every 10 seconds — guarantees frontend always matches backend
   setInterval(async () => {
-    const fresh = await getAllRooms();
-    allRoomsCache = fresh;
-    renderRooms(fresh);
-    loadStats();
-  }, 15000);
+    try {
+      const fresh = await getAllRooms();
+      allRoomsCache = fresh;
+      renderRooms(fresh);
+      loadStats();
+    } catch(e) { console.error('[Poll] Error:', e); }
+  }, 10000);
 }
 
 function bindEvents() {

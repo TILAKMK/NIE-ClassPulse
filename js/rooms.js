@@ -1,7 +1,7 @@
 // ============================================================
-//  js/rooms.js
-//  FIXED: updateRoomStatus always sets session_end
-//         so scheduler lock works even if teacher skips end time
+//  js/rooms.js — FINAL FIXED VERSION
+//  Key fix: session_end is ALWAYS set when marking occupied
+//  so the scheduler lock always works
 // ============================================================
 import { supabase } from './supabase.js';
 
@@ -20,24 +20,6 @@ export async function getRoomById(id) {
     .select('*')
     .eq('id', id)
     .single();
-  if (error) throw error;
-  return data;
-}
-
-export async function searchRooms(query) {
-  const { data, error } = await supabase
-    .from('classrooms')
-    .select('*')
-    .or(`room_number.ilike.%${query}%,building.ilike.%${query}%`);
-  if (error) throw error;
-  return data;
-}
-
-export async function filterRooms({ building, status }) {
-  let q = supabase.from('classrooms').select('*');
-  if (building && building !== 'all') q = q.eq('building', building);
-  if (status   && status   !== 'all') q = q.eq('status', status);
-  const { data, error } = await q.order('room_number');
   if (error) throw error;
   return data;
 }
@@ -63,25 +45,22 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
   if (status === 'occupied' && sessionInfo) {
     updates.current_subject = sessionInfo.subject || null;
     updates.current_faculty = sessionInfo.faculty || null;
+    updates.session_start   = sessionInfo.start ? sessionInfo.start + ':00' : null;
 
-    // Always store start time
-    updates.session_start = sessionInfo.start ? sessionInfo.start + ':00' : null;
-
-    // CRITICAL FIX: Always store an end time for scheduler lock to work
-    // If teacher didn't enter end time → default to 1 hour from now
-    if (sessionInfo.end) {
+    // CRITICAL — always set session_end so scheduler lock works
+    if (sessionInfo.end && sessionInfo.end.length >= 4) {
       updates.session_end = sessionInfo.end + ':00';
-    } else if (sessionInfo.start) {
-      // Add 1 hour to start time as default end
+    } else if (sessionInfo.start && sessionInfo.start.length >= 4) {
+      // Default: 1 hour after start
       const [h, m] = sessionInfo.start.split(':').map(Number);
       const endH = String((h + 1) % 24).padStart(2, '0');
-      updates.session_end = `${endH}:${String(m).padStart(2,'0')}:00`;
+      const endM = String(m).padStart(2, '0');
+      updates.session_end = `${endH}:${endM}:00`;
     } else {
-      // No times at all — lock for 1 hour from now IST
-      const now = new Date();
+      // No times given — lock for 1 hour from now IST
+      const now   = new Date();
       const utcMs = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-      const istMs = utcMs + (5.5 * 60 * 60 * 1000);
-      const ist = new Date(istMs + 60 * 60 * 1000); // +1 hour
+      const ist   = new Date(utcMs + (5.5 * 60 * 60 * 1000) + (60 * 60 * 1000));
       updates.session_end = `${String(ist.getHours()).padStart(2,'0')}:${String(ist.getMinutes()).padStart(2,'0')}:00`;
     }
   } else {
@@ -92,12 +71,17 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
     updates.session_end     = null;
   }
 
+  console.log('[rooms.js] Updating room:', roomId, updates);
+
   const { error } = await supabase
     .from('classrooms')
     .update(updates)
     .eq('id', roomId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[rooms.js] Update error:', error.message);
+    throw new Error(error.message);
+  }
   return true;
 }
 
@@ -110,16 +94,4 @@ export function subscribeToRoomChanges(callback) {
       (payload) => callback(payload.new)
     )
     .subscribe();
-}
-
-export async function getRoomSchedule(roomId) {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const { data, error } = await supabase
-    .from('schedules')
-    .select('*')
-    .eq('room_id', roomId)
-    .eq('day', today)
-    .order('start_time');
-  if (error) throw error;
-  return data;
 }
