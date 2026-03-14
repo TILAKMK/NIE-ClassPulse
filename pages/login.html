@@ -22,97 +22,55 @@
 
   <!-- Logo -->
   <div class="text-center mb-8">
-    <div class="inline-flex items-center justify-center size-14 bg-primary rounded-2xl text-white mb-4 shadow-lg shadow-primary/30">
+    <div class="inline-flex items-center justify-center size-16 bg-primary rounded-2xl text-white mb-4 shadow-lg shadow-primary/30">
       <span class="material-symbols-outlined text-3xl">pulse_alert</span>
     </div>
     <h1 class="text-2xl font-bold text-slate-900 dark:text-white">NIE ClassPulse</h1>
-    <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Staff Login</p>
+    <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Staff Access</p>
   </div>
 
   <!-- Info box -->
   <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-xl p-4 mb-6">
     <div class="flex gap-3">
-      <span class="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5">info</span>
+      <span class="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5">lock</span>
       <div class="text-sm text-slate-600 dark:text-slate-300">
-        <p class="font-semibold mb-1">Teachers &amp; CRs only</p>
-        <p>Login with <strong>your email</strong> + the <strong>shared staff password</strong>.</p>
+        <p class="font-semibold mb-1">Anyone with the staff password can access</p>
+        <p>Enter <strong>any email</strong> + the <strong>secret staff password</strong> to get editor access.</p>
         <p class="mt-1 text-xs text-slate-400">Students just open the app — no login needed.</p>
       </div>
     </div>
   </div>
 
-  <!-- Tabs: Login / Register -->
-  <div class="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-4 gap-1">
-    <button id="tab-login" onclick="switchTab('login')"
-            class="flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm">
-      Login
-    </button>
-    <button id="tab-register" onclick="switchTab('register')"
-            class="flex-1 py-2 rounded-lg text-sm font-semibold transition-colors text-slate-500 dark:text-slate-400">
-      First Time? Register
-    </button>
-  </div>
-
-  <!-- Login Panel -->
-  <div id="panel-login" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+  <!-- Login form -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
     <div class="space-y-4">
       <div>
         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Your Email</label>
         <div class="relative">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">mail</span>
-          <input id="login-email" type="email" placeholder="yourname@nie.ac.in"
-                 class="w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"/>
+          <input id="login-email" type="email" placeholder="your@email.com"
+                 class="w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none transition-all"/>
         </div>
       </div>
       <div>
         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Staff Password</label>
         <div class="relative">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">lock</span>
-          <input id="login-password" type="password" placeholder="Shared staff password"
-                 class="w-full pl-10 pr-10 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"/>
-          <button type="button" onclick="togglePw('login-password', this)"
+          <input id="login-password" type="password" placeholder="Enter staff password"
+                 class="w-full pl-10 pr-10 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none transition-all"/>
+          <button type="button" onclick="togglePw()"
                   class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-            <span class="material-symbols-outlined text-xl">visibility</span>
+            <span id="pw-eye" class="material-symbols-outlined text-xl">visibility</span>
           </button>
         </div>
-        <p class="text-xs text-slate-400 mt-1">Same password for all staff. Ask your admin if you don't have it.</p>
       </div>
+
       <p id="login-error" class="text-red-500 text-xs hidden"></p>
+      <p id="login-info" class="text-blue-500 text-xs hidden"></p>
+
       <button id="login-btn"
               class="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined text-base">login</span>Login
-      </button>
-    </div>
-  </div>
-
-  <!-- Register Panel (hidden by default) -->
-  <div id="panel-register" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-    <p class="text-xs text-slate-500 mb-4">Register your email with the shared staff password — do this <strong>once</strong>. After that, use the Login tab.</p>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Your Email</label>
-        <div class="relative">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">mail</span>
-          <input id="reg-email" type="email" placeholder="yourname@nie.ac.in"
-                 class="w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"/>
-        </div>
-      </div>
-      <div>
-        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Staff Password</label>
-        <div class="relative">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">lock</span>
-          <input id="reg-password" type="password" placeholder="Enter shared staff password"
-                 class="w-full pl-10 pr-10 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"/>
-          <button type="button" onclick="togglePw('reg-password', this)"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-            <span class="material-symbols-outlined text-xl">visibility</span>
-          </button>
-        </div>
-      </div>
-      <p id="reg-error" class="text-xs hidden"></p>
-      <button id="reg-btn"
-              class="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined text-base">person_add</span>Register &amp; Login
+        <span class="material-symbols-outlined text-base">login</span>Access Control Panel
       </button>
     </div>
   </div>
@@ -123,121 +81,101 @@
 </div>
 
 <script>
-  function switchTab(tab) {
-    const isLogin = tab === 'login';
-    document.getElementById('panel-login').classList.toggle('hidden', !isLogin);
-    document.getElementById('panel-register').classList.toggle('hidden', isLogin);
-    document.getElementById('tab-login').className    = `flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${isLogin  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'}`;
-    document.getElementById('tab-register').className = `flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${!isLogin ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400'}`;
-  }
-
-  function togglePw(inputId, btn) {
-    const pw = document.getElementById(inputId);
-    const icon = btn.querySelector('span');
-    pw.type = pw.type === 'password' ? 'text' : 'password';
-    icon.textContent = pw.type === 'password' ? 'visibility' : 'visibility_off';
-  }
+function togglePw() {
+  const pw  = document.getElementById('login-password');
+  const eye = document.getElementById('pw-eye');
+  pw.type   = pw.type === 'password' ? 'text' : 'password';
+  eye.textContent = pw.type === 'password' ? 'visibility' : 'visibility_off';
+}
 </script>
 
 <script type="module">
   import { supabase } from '/js/supabase.js';
 
-  // ══════════════════════════════════════════════════════════
-  //  SET YOUR SHARED PASSWORD HERE
-  //  Tell all teachers & CRs this password — same for everyone
+  // ══════════════════════════════════════════════════
+  //  CHANGE THIS PASSWORD to whatever you want
   const SHARED_PASSWORD = 'NIE@ClassPulse2025';
-  // ══════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════
 
-  // ── LOGIN ─────────────────────────────────────────────────
-  document.getElementById('login-btn').addEventListener('click', async () => {
+  const btn      = document.getElementById('login-btn');
+  const errEl    = document.getElementById('login-error');
+  const infoEl   = document.getElementById('login-info');
+
+  async function doLogin() {
     const email    = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value.trim();
-    const errEl    = document.getElementById('login-error');
-    const btn      = document.getElementById('login-btn');
-    errEl.classList.add('hidden');
 
-    if (!email || !password) {
-      errEl.textContent = 'Please fill in both fields.';
+    errEl.classList.add('hidden');
+    infoEl.classList.add('hidden');
+
+    if (!email) {
+      errEl.textContent = 'Please enter your email.';
       errEl.classList.remove('hidden'); return;
     }
 
-    btn.innerHTML = '<span class="material-symbols-outlined text-base">progress_activity</span> Logging in…';
-    btn.disabled = true;
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      // If user not registered yet, tell them to register first
-      if (error.message.includes('Invalid login') || error.message.includes('Email not confirmed')) {
-        errEl.textContent = 'Email not registered. Use the "First Time? Register" tab first.';
-      } else {
-        errEl.textContent = 'Wrong password or email. Use the shared staff password.';
-      }
-      errEl.classList.remove('hidden');
-      btn.innerHTML = '<span class="material-symbols-outlined text-base">login</span> Login';
-      btn.disabled = false;
-      return;
-    }
-
-    localStorage.setItem('staff_display_email', email);
-    window.location.href = '/';
-  });
-
-  document.getElementById('login-password').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('login-btn').click();
-  });
-
-  // ── REGISTER (first time only) ────────────────────────────
-  document.getElementById('reg-btn').addEventListener('click', async () => {
-    const email    = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value.trim();
-    const errEl    = document.getElementById('reg-error');
-    const btn      = document.getElementById('reg-btn');
-    errEl.classList.add('hidden');
-
-    if (!email || !password) {
-      errEl.style.color = 'red';
-      errEl.textContent = 'Please fill in both fields.';
-      errEl.classList.remove('hidden'); return;
-    }
-
-    // Enforce shared password — only staff who know it can register
+    // Wrong password → block immediately
     if (password !== SHARED_PASSWORD) {
-      errEl.style.color = 'red';
-      errEl.textContent = '❌ Wrong staff password. Ask your admin for the correct one.';
+      errEl.textContent = '❌ Wrong password. Ask your admin for the staff password.';
       errEl.classList.remove('hidden'); return;
     }
 
-    btn.innerHTML = '<span class="material-symbols-outlined text-base">progress_activity</span> Registering…';
     btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Please wait…';
 
-    // Sign up with their email + shared password
-    const { error: signUpError } = await supabase.auth.signUp({ email, password });
+    // Try login first
+    const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (signUpError && !signUpError.message.includes('already registered')) {
-      errEl.style.color = 'red';
-      errEl.textContent = 'Registration failed: ' + signUpError.message;
-      errEl.classList.remove('hidden');
-      btn.innerHTML = '<span class="material-symbols-outlined text-base">person_add</span> Register & Login';
-      btn.disabled = false;
+    if (!loginErr) {
+      // Login success
+      localStorage.setItem('staff_display_email', email);
+      window.location.href = '/';
       return;
     }
 
-    // Auto-login immediately after registration
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    // If login failed because user doesn't exist → auto register silently
+    if (loginErr.message.includes('Invalid login') || loginErr.message.includes('invalid_credentials')) {
+      infoEl.textContent = 'First time? Setting up your access…';
+      infoEl.classList.remove('hidden');
 
-    if (loginError) {
-      // Supabase may require email confirmation — inform the user
-      errEl.style.color = 'orange';
-      errEl.textContent = '✅ Registered! Check your email to confirm, then login.';
+      const { error: signUpErr } = await supabase.auth.signUp({ email, password });
+
+      if (signUpErr && !signUpErr.message.includes('already registered')) {
+        errEl.textContent = 'Error: ' + signUpErr.message;
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-base">login</span> Access Control Panel';
+        return;
+      }
+
+      // Try login again after signup
+      const { error: retryErr } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (!retryErr) {
+        localStorage.setItem('staff_display_email', email);
+        window.location.href = '/';
+        return;
+      }
+
+      // Supabase email confirmation might be on
+      if (retryErr.message.includes('Email not confirmed')) {
+        errEl.textContent = '⚠️ Check your email and click the confirmation link, then try again. OR turn off "Confirm email" in Supabase → Authentication → Sign In / Providers.';
+        errEl.classList.remove('hidden');
+      } else {
+        errEl.textContent = retryErr.message;
+        errEl.classList.remove('hidden');
+      }
+    } else {
+      errEl.textContent = loginErr.message;
       errEl.classList.remove('hidden');
-      btn.innerHTML = '<span class="material-symbols-outlined text-base">person_add</span> Register & Login';
-      btn.disabled = false;
-      return;
     }
 
-    localStorage.setItem('staff_display_email', email);
-    window.location.href = '/';
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-base">login</span> Access Control Panel';
+  }
+
+  btn.addEventListener('click', doLogin);
+  document.getElementById('login-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
   });
 </script>
 </body>

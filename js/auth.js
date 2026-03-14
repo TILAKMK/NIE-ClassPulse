@@ -1,8 +1,7 @@
 // ============================================================
-//  js/auth.js
-//  Login model: every teacher/CR registers with their own email
-//  but ALL use the same shared password (set by admin).
-//  Anyone who is logged in = staff. No role lookup needed.
+//  auth.js — Simplified
+//  Anyone logged in = has editor access
+//  No role checks needed
 // ============================================================
 import { supabase } from './supabase.js';
 
@@ -11,8 +10,8 @@ export async function getUser() {
   return user ?? null;
 }
 
-// If logged in → 'teacher', if not → 'student'
-// Simple: anyone who can log in with the shared password is staff
+// Anyone logged in = 'teacher' (editor access)
+// Not logged in = 'student' (view only)
 export async function getUserRole() {
   const user = await getUser();
   return user ? 'teacher' : 'student';
