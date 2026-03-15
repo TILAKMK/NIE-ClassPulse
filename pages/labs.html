@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode:'class',
+      theme:{ extend:{ colors:{ primary:"#137fec" }, fontFamily:{ display:["Lexend"] } } }
+    }
+  </script>
+  <title>Lab Schedule — NIE ClassPulse</title>
+  <style>body{ font-family:'Lexend',sans-serif; }</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+  <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="/" class="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </a>
+      <img src="/logo.png" alt="NIE ClassPulse" class="h-9 w-9 rounded-xl object-cover" onerror="this.style.display='none'"/>
+      <div>
+        <h1 class="text-lg font-bold leading-tight">Lab Schedule</h1>
+        <p class="text-xs text-slate-400">NIE ClassPulse · Read Only</p>
+      </div>
+    </div>
+    <button onclick="toggleTheme()" class="size-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+      <span id="theme-icon" class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">dark_mode</span>
+    </button>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8 pb-24">
+
+  <!-- Title -->
+  <div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+      <div class="size-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+        <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">science</span>
+      </div>
+      <div>
+        <h2 class="text-2xl font-bold">Lab Hours</h2>
+        <p class="text-sm text-slate-400">Which class has lab session in which room</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+      <span class="material-symbols-outlined text-amber-500 text-sm">info</span>
+      <p class="text-xs text-amber-700 dark:text-amber-400">During lab hours, the classroom is <strong>vacant</strong> — students are in the lab block. This is read-only information.</p>
+    </div>
+  </div>
+
+  <!-- Day Filter Tabs -->
+  <div class="flex flex-wrap gap-2 mb-6">
+    <button class="day-tab active-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-primary text-white" data-day="all">All Days</button>
+    <button class="day-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Monday">Monday</button>
+    <button class="day-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Tuesday">Tuesday</button>
+    <button class="day-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Wednesday">Wednesday</button>
+    <button class="day-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Thursday">Thursday</button>
+    <button class="day-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Friday">Friday</button>
+  </div>
+
+  <!-- Search -->
+  <div class="relative mb-6">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+    <input id="lab-search" type="text" placeholder="Search by room, section or lab subject..."
+           class="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+  </div>
+
+  <!-- Lab count -->
+  <div class="flex items-center gap-2 mb-4">
+    <span class="material-symbols-outlined text-purple-500">science</span>
+    <span class="font-bold text-sm">Lab Sessions</span>
+    <span id="lab-count" class="text-slate-400 text-sm"></span>
+  </div>
+
+  <!-- Lab Grid -->
+  <div id="lab-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+  <!-- Empty state -->
+  <div id="empty-state" class="hidden text-center py-16">
+    <span class="material-symbols-outlined text-5xl text-slate-300 block mb-3">search_off</span>
+    <p class="text-slate-400">No lab sessions found</p>
+  </div>
+
+</main>
+
+<script>
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-icon').textContent = isDark ? 'light_mode' : 'dark_mode';
+}
+window.addEventListener('DOMContentLoaded', () => {
+  const isDark = document.documentElement.classList.contains('dark');
+  document.getElementById('theme-icon').textContent = isDark ? 'light_mode' : 'dark_mode';
+});
+</script>
+
+<script>
+const LAB_DATA = [
+  {
+    "room": "403",
+    "section": "4th CSE-C",
+    "day": "Friday",
+    "subject": "Lab (DBMS/MC/ADA)",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "407",
+    "section": "6th CSE-C",
+    "day": "Friday",
+    "subject": "IOT/ML Lab",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "409",
+    "section": "6th AIML-E",
+    "day": "Friday",
+    "subject": "MC&ES/DL Lab",
+    "start": "09:00",
+    "end": "13:30"
+  },
+  {
+    "room": "410",
+    "section": "6th AIML-F",
+    "day": "Friday",
+    "subject": "PyTorch Lab (F1)",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "108",
+    "section": "2nd CSE-C",
+    "day": "Friday",
+    "subject": "CHE/PLC LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "304",
+    "section": "4th IS-D",
+    "day": "Friday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "308",
+    "section": "6th IS-D",
+    "day": "Friday",
+    "subject": "ML Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "401",
+    "section": "4th CSE-A",
+    "day": "Friday",
+    "subject": "Lab (ADA/DBMS/MC)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "402",
+    "section": "4th CSE-B",
+    "day": "Friday",
+    "subject": "Lab (ADA)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "405",
+    "section": "6th CSE-A",
+    "day": "Friday",
+    "subject": "IOT/ML Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "407",
+    "section": "6th CSE-C",
+    "day": "Friday",
+    "subject": "DevOps/CC Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "MB-5",
+    "section": "2nd AIML-A",
+    "day": "Friday",
+    "subject": "PHY/PSCL LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "201",
+    "section": "2nd AIML-B",
+    "day": "Friday",
+    "subject": "PHY/PCL LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "303",
+    "section": "4th IS-C",
+    "day": "Friday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "309",
+    "section": "4th AIML-E",
+    "day": "Friday",
+    "subject": "MERN Lab (E1)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "402",
+    "section": "4th CSE-B",
+    "day": "Friday",
+    "subject": "UI/UX Lab (B2)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "403",
+    "section": "4th CSE-C",
+    "day": "Friday",
+    "subject": "UI/UX Lab (C2)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "404",
+    "section": "4th CSE-D",
+    "day": "Friday",
+    "subject": "Lab (DBMS/MC/ADA)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "405",
+    "section": "6th CSE-A",
+    "day": "Friday",
+    "subject": "CC Tutorial / DevOps Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "408",
+    "section": "6th CSE-D",
+    "day": "Friday",
+    "subject": "IOT/ML/DevOps Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "410",
+    "section": "6th AIML-F",
+    "day": "Friday",
+    "subject": "MC&ES/DL Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "MB-1",
+    "section": "2nd CSE-E",
+    "day": "Friday",
+    "subject": "IDT LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "109",
+    "section": "2nd CSE-D",
+    "day": "Monday",
+    "subject": "CHE/PLC LAB",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "301",
+    "section": "4th IS-A",
+    "day": "Monday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "404",
+    "section": "4th CSE-D",
+    "day": "Monday",
+    "subject": "Lab (ADA/DBMS/MC)",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "107",
+    "section": "2nd CSE-B",
+    "day": "Monday",
+    "subject": "CHE/PLC LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "304",
+    "section": "4th IS-D",
+    "day": "Monday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "401",
+    "section": "4th CSE-A",
+    "day": "Monday",
+    "subject": "UI/UX Lab (A1)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "403",
+    "section": "4th CSE-C",
+    "day": "Monday",
+    "subject": "Lab (ADA/DBMS/MC)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "406",
+    "section": "6th CSE-B",
+    "day": "Monday",
+    "subject": "IOT/ML/DevOps Lab",
+    "start": "11:30",
+    "end": "16:30"
+  },
+  {
+    "room": "407",
+    "section": "6th CSE-C",
+    "day": "Monday",
+    "subject": "DevOps/CC Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "409",
+    "section": "6th AIML-E",
+    "day": "Monday",
+    "subject": "PyTorch Lab (E1)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "410",
+    "section": "6th AIML-F",
+    "day": "Monday",
+    "subject": "MC&ES/DL Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "MB-2",
+    "section": "2nd CSE-F",
+    "day": "Monday",
+    "subject": "PHY/PSCL LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "101",
+    "section": "2nd CSE-A",
+    "day": "Monday",
+    "subject": "IDT LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "305",
+    "section": "6th IS-A",
+    "day": "Monday",
+    "subject": "FSD Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "309",
+    "section": "4th AIML-E",
+    "day": "Monday",
+    "subject": "Lab (ADA/DBMS/AI)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "402",
+    "section": "4th CSE-B",
+    "day": "Monday",
+    "subject": "Lab (ADA/DBMS/MC)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "405",
+    "section": "6th CSE-A",
+    "day": "Monday",
+    "subject": "IOT Lab (A1)",
+    "start": "14:30",
+    "end": "15:30"
+  },
+  {
+    "room": "407",
+    "section": "6th CSE-C",
+    "day": "Monday",
+    "subject": "ML Lab (C2)",
+    "start": "14:30",
+    "end": "15:30"
+  },
+  {
+    "room": "405",
+    "section": "6th CSE-A",
+    "day": "Monday",
+    "subject": "ML Lab (A3)",
+    "start": "15:30",
+    "end": "16:30"
+  },
+  {
+    "room": "304",
+    "section": "4th IS-D",
+    "day": "Thursday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "309",
+    "section": "4th AIML-E",
+    "day": "Thursday",
+    "subject": "Lab (DBMS/AI/ADA)",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "406",
+    "section": "6th CSE-B",
+    "day": "Thursday",
+    "subject": "IOT/ML/DevOps Lab",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "303",
+    "section": "4th IS-C",
+    "day": "Thursday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "307",
+    "section": "6th IS-C",
+    "day": "Thursday",
+    "subject": "ML Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "310",
+    "section": "4th AIML-F",
+    "day": "Thursday",
+    "subject": "Lab (AI/ADA/DBMS)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "402",
+    "section": "4th CSE-B",
+    "day": "Thursday",
+    "subject": "Lab (DBMS/MC)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "403",
+    "section": "4th CSE-C",
+    "day": "Thursday",
+    "subject": "UI/UX Lab (C1)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "405",
+    "section": "6th CSE-A",
+    "day": "Thursday",
+    "subject": "IOT/ML Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "MB-1",
+    "section": "2nd CSE-E",
+    "day": "Thursday",
+    "subject": "CHE/PLC LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "MB-3",
+    "section": "2nd CSE-G",
+    "day": "Thursday",
+    "subject": "PHY/PSCL LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "101",
+    "section": "2nd CSE-A",
+    "day": "Thursday",
+    "subject": "CHE LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "109",
+    "section": "2nd CSE-D",
+    "day": "Thursday",
+    "subject": "IDT LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "302",
+    "section": "4th IS-B",
+    "day": "Thursday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "308",
+    "section": "6th IS-D",
+    "day": "Thursday",
+    "subject": "FSD Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "310",
+    "section": "4th AIML-F",
+    "day": "Thursday",
+    "subject": "MERN Lab (F2)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "401",
+    "section": "4th CSE-A",
+    "day": "Thursday",
+    "subject": "Lab (MC/ADA/DBMS)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "404",
+    "section": "4th CSE-D",
+    "day": "Thursday",
+    "subject": "UI/UX Lab (D2)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "408",
+    "section": "6th CSE-D",
+    "day": "Thursday",
+    "subject": "IOT/ML/DevOps Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "MB-4",
+    "section": "2nd CSE-H",
+    "day": "Thursday",
+    "subject": "PHY/PSCL LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "108",
+    "section": "2nd CSE-C",
+    "day": "Tuesday",
+    "subject": "CHE LAB",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "302",
+    "section": "4th IS-B",
+    "day": "Tuesday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "310",
+    "section": "4th AIML-F",
+    "day": "Tuesday",
+    "subject": "Lab (ADA/DBMS/AI)",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "402",
+    "section": "4th CSE-B",
+    "day": "Tuesday",
+    "subject": "Lab (MC/ADA/DBMS)",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "109",
+    "section": "2nd CSE-D",
+    "day": "Tuesday",
+    "subject": "CHE/PLC LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "301",
+    "section": "4th IS-A",
+    "day": "Tuesday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "305",
+    "section": "6th IS-A",
+    "day": "Tuesday",
+    "subject": "ML Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "309",
+    "section": "4th AIML-E",
+    "day": "Tuesday",
+    "subject": "Lab (ADA/DBMS)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "404",
+    "section": "4th CSE-D",
+    "day": "Tuesday",
+    "subject": "UI/UX Lab (D1)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "408",
+    "section": "6th CSE-D",
+    "day": "Tuesday",
+    "subject": "IOT/ML/DevOps Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "409",
+    "section": "6th AIML-E",
+    "day": "Tuesday",
+    "subject": "MC&ES/DL Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "MB-4",
+    "section": "2nd CSE-H",
+    "day": "Tuesday",
+    "subject": "PHY/PSCL LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "101",
+    "section": "2nd CSE-A",
+    "day": "Tuesday",
+    "subject": "CHE/PLC LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "107",
+    "section": "2nd CSE-B",
+    "day": "Tuesday",
+    "subject": "IDT LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "306",
+    "section": "6th IS-B",
+    "day": "Tuesday",
+    "subject": "FSD Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "309",
+    "section": "4th AIML-E",
+    "day": "Tuesday",
+    "subject": "AI Lab (E1)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "310",
+    "section": "4th AIML-F",
+    "day": "Tuesday",
+    "subject": "MERN Lab (F1)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "401",
+    "section": "4th CSE-A",
+    "day": "Tuesday",
+    "subject": "UI/UX Lab (A2)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "403",
+    "section": "4th CSE-C",
+    "day": "Tuesday",
+    "subject": "Lab (MC/ADA/DBMS)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "410",
+    "section": "6th AIML-F",
+    "day": "Tuesday",
+    "subject": "PyTorch Lab (F2)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "MB-5",
+    "section": "2nd AIML-A",
+    "day": "Tuesday",
+    "subject": "PHY/PSCL LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "303",
+    "section": "4th IS-C",
+    "day": "Wednesday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "401",
+    "section": "4th CSE-A",
+    "day": "Wednesday",
+    "subject": "Lab (MC/ADA/DBMS)",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "MB-1",
+    "section": "2nd CSE-E",
+    "day": "Wednesday",
+    "subject": "CHE LAB",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "MB-3",
+    "section": "2nd CSE-G",
+    "day": "Wednesday",
+    "subject": "PHY LAB",
+    "start": "09:00",
+    "end": "11:00"
+  },
+  {
+    "room": "107",
+    "section": "2nd CSE-B",
+    "day": "Wednesday",
+    "subject": "CHE/PLC LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "201",
+    "section": "2nd AIML-B",
+    "day": "Wednesday",
+    "subject": "PHY/PCL LAB",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "302",
+    "section": "4th IS-B",
+    "day": "Wednesday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "306",
+    "section": "6th IS-B",
+    "day": "Wednesday",
+    "subject": "ML Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "402",
+    "section": "4th CSE-B",
+    "day": "Wednesday",
+    "subject": "UI/UX Lab (B1)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "404",
+    "section": "4th CSE-D",
+    "day": "Wednesday",
+    "subject": "Lab (MC/ADA/DBMS)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "409",
+    "section": "6th AIML-E",
+    "day": "Wednesday",
+    "subject": "PyTorch Lab (E2)",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "410",
+    "section": "6th AIML-F",
+    "day": "Wednesday",
+    "subject": "MC&ES/DL Lab",
+    "start": "11:30",
+    "end": "13:30"
+  },
+  {
+    "room": "101",
+    "section": "2nd CSE-A",
+    "day": "Wednesday",
+    "subject": "PLC LAB-A1",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "108",
+    "section": "2nd CSE-C",
+    "day": "Wednesday",
+    "subject": "IDT LAB",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "301",
+    "section": "4th IS-A",
+    "day": "Wednesday",
+    "subject": "ADA/AJ/DBMS Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "307",
+    "section": "6th IS-C",
+    "day": "Wednesday",
+    "subject": "FSD Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "309",
+    "section": "4th AIML-E",
+    "day": "Wednesday",
+    "subject": "MERN Lab (E2)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "310",
+    "section": "4th AIML-F",
+    "day": "Wednesday",
+    "subject": "Lab (DBMS/AI/ADA)",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "405",
+    "section": "6th CSE-A",
+    "day": "Wednesday",
+    "subject": "CC Tutorial / DevOps Lab",
+    "start": "14:30",
+    "end": "15:30"
+  },
+  {
+    "room": "407",
+    "section": "6th CSE-C",
+    "day": "Wednesday",
+    "subject": "IOT/ML Lab",
+    "start": "14:30",
+    "end": "16:30"
+  },
+  {
+    "room": "MB-2",
+    "section": "2nd CSE-F",
+    "day": "Wednesday",
+    "subject": "PHY/PSCL LAB",
+    "start": "14:30",
+    "end": "16:30"
+  }
+];
+
+const DAYS_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+function fmtTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  return `${h > 12 ? h-12 : h === 0 ? 12 : h}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM':'AM'}`;
+}
+
+function getLabColor(subject) {
+  const s = subject.toUpperCase();
+  if (s.includes('CHE'))    return { bg: 'bg-orange-100 dark:bg-orange-900/20', text: 'text-orange-700 dark:text-orange-400', icon: 'science' };
+  if (s.includes('PHY'))    return { bg: 'bg-blue-100 dark:bg-blue-900/20',   text: 'text-blue-700 dark:text-blue-400',   icon: 'bolt' };
+  if (s.includes('IDT'))    return { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', icon: 'engineering' };
+  if (s.includes('PLC'))    return { bg: 'bg-yellow-100 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-400', icon: 'memory' };
+  if (s.includes('UI') || s.includes('UX')) return { bg: 'bg-pink-100 dark:bg-pink-900/20', text: 'text-pink-700 dark:text-pink-400', icon: 'design_services' };
+  if (s.includes('IOT'))    return { bg: 'bg-cyan-100 dark:bg-cyan-900/20',   text: 'text-cyan-700 dark:text-cyan-400',   icon: 'device_hub' };
+  if (s.includes('ML') || s.includes('PYTORCH') || s.includes('AI')) return { bg: 'bg-purple-100 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-400', icon: 'psychology' };
+  if (s.includes('MERN') || s.includes('FSD') || s.includes('DEVOPS')) return { bg: 'bg-indigo-100 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-400', icon: 'code' };
+  if (s.includes('ADA') || s.includes('DBMS')) return { bg: 'bg-teal-100 dark:bg-teal-900/20', text: 'text-teal-700 dark:text-teal-400', icon: 'storage' };
+  return { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-700 dark:text-slate-300', icon: 'science' };
+}
+
+let activeDay = 'all';
+let searchQuery = '';
+
+function getTodayIST() {
+  const now = new Date();
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+  const ist = new Date(utcMs + 5.5 * 60 * 60 * 1000);
+  return ist.toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+function getNowIST() {
+  const now = new Date();
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+  const ist = new Date(utcMs + 5.5 * 60 * 60 * 1000);
+  return `${String(ist.getHours()).padStart(2,'0')}:${String(ist.getMinutes()).padStart(2,'0')}`;
+}
+
+function renderLabs() {
+  const today = getTodayIST();
+  const now = getNowIST();
+  const grid = document.getElementById('lab-grid');
+  const empty = document.getElementById('empty-state');
+  const countEl = document.getElementById('lab-count');
+
+  let filtered = LAB_DATA;
+  if (activeDay !== 'all') filtered = filtered.filter(l => l.day === activeDay);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(l =>
+      l.room.toLowerCase().includes(q) ||
+      l.section.toLowerCase().includes(q) ||
+      l.subject.toLowerCase().includes(q)
+    );
+  }
+
+  // Group by day
+  const byDay = {};
+  DAYS_ORDER.forEach(d => byDay[d] = []);
+  filtered.forEach(l => { if (byDay[l.day]) byDay[l.day].push(l); });
+
+  countEl.textContent = `(${filtered.length} sessions)`;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  let html = '';
+  const daysToShow = activeDay === 'all' ? DAYS_ORDER : [activeDay];
+
+  for (const day of daysToShow) {
+    const entries = byDay[day] || [];
+    if (entries.length === 0) continue;
+
+    const isToday = day === today;
+    html += `
+      <div class="col-span-full mt-2 mb-1">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-bold ${isToday ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}">${day}</span>
+          ${isToday ? '<span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Today</span>' : ''}
+        </div>
+      </div>`;
+
+    for (const lab of entries) {
+      const color = getLabColor(lab.subject);
+      const isNow = isToday && now >= lab.start && now < lab.end;
+      html += `
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border ${isNow ? 'border-purple-400 dark:border-purple-500 shadow-lg shadow-purple-500/10' : 'border-slate-200 dark:border-slate-800'} p-5 transition-all">
+          ${isNow ? '<div class="flex items-center gap-1.5 mb-3"><span class="w-2 h-2 bg-purple-500 rounded-full animate-pulse inline-block"></span><span class="text-xs font-bold text-purple-500 uppercase">Happening Now</span></div>' : ''}
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <div class="size-9 rounded-xl ${color.bg} flex items-center justify-center">
+                <span class="material-symbols-outlined ${color.text} text-lg">${color.icon}</span>
+              </div>
+              <div>
+                <p class="font-bold text-base">${lab.room}</p>
+                <p class="text-xs text-slate-400">${lab.section}</p>
+              </div>
+            </div>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${color.bg} ${color.text}">${fmtTime(lab.start)} – ${fmtTime(lab.end)}</span>
+          </div>
+          <div class="p-2.5 rounded-xl ${color.bg}">
+            <p class="text-sm font-semibold ${color.text}">${lab.subject}</p>
+          </div>
+        </div>`;
+    }
+  }
+
+  grid.innerHTML = html;
+}
+
+// Day tab clicks
+document.querySelectorAll('.day-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    activeDay = tab.dataset.day;
+    document.querySelectorAll('.day-tab').forEach(t => {
+      t.className = 'day-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300';
+    });
+    tab.className = 'day-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all bg-primary text-white';
+    renderLabs();
+  });
+});
+
+// Search
+document.getElementById('lab-search').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  renderLabs();
+});
+
+renderLabs();
+// Refresh every minute to update "Happening Now"
+setInterval(renderLabs, 60000);
+</script>
+</body>
+</html>
