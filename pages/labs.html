@@ -2474,10 +2474,18 @@ function renderLabs() {
       <span class="text-xs text-slate-400">${entries.length} sessions</span>
     </div>`;
 
-    // Group entries by time slot so batches at same time are shown together
+    // Group entries by full class context so unrelated sections/depts/semesters
+    // never get merged into one card.
     const bySlot = {};
     for (const lab of entries) {
-      const slotKey = lab.start + '-' + lab.section;
+      const slotKey = [
+        lab.semester,
+        lab.dept,
+        lab.section,
+        lab.day,
+        lab.start,
+        lab.end
+      ].join('|');
       if (!bySlot[slotKey]) bySlot[slotKey] = [];
       bySlot[slotKey].push(lab);
     }
@@ -2486,7 +2494,11 @@ function renderLabs() {
     const sortedSlots = Object.keys(bySlot).sort((a,b) => a.localeCompare(b));
 
     for (const slotKey of sortedSlots) {
-      const slotEntries = bySlot[slotKey];
+      const slotEntries = bySlot[slotKey].sort((a, b) => {
+        const aBatch = parseBatch(a.batch).batchNum;
+        const bBatch = parseBatch(b.batch).batchNum;
+        return aBatch.localeCompare(bBatch) || a.lab_name.localeCompare(b.lab_name);
+      });
       const firstLab = slotEntries[0];
       const isNow = isToday && now >= firstLab.start && now < firstLab.end;
 
