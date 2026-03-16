@@ -92,14 +92,19 @@ function togglePw() {
 <script type="module">
   import { supabase } from '/js/supabase.js';
 
-  // ══════════════════════════════════════════════════
-  //  CHANGE THIS PASSWORD to whatever you want
   const SHARED_PASSWORD = 'NIE@ClassPulse2025';
-  // ══════════════════════════════════════════════════
 
-  const btn      = document.getElementById('login-btn');
-  const errEl    = document.getElementById('login-error');
-  const infoEl   = document.getElementById('login-info');
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  const infoEl= document.getElementById('login-info');
+
+  function getDashboardUrl(email) {
+    const e = (email || '').toLowerCase();
+    if (/^cr[._@]/.test(e) || e.includes('.cr@') || e.includes('cr.nie')) {
+      return '/pages/user-dashboard.html?role=cr';
+    }
+    return '/pages/user-dashboard.html?role=teacher';
+  }
 
   async function doLogin() {
     const email    = document.getElementById('login-email').value.trim();
@@ -113,7 +118,6 @@ function togglePw() {
       errEl.classList.remove('hidden'); return;
     }
 
-    // Wrong password → block immediately
     if (password !== SHARED_PASSWORD) {
       errEl.textContent = '❌ Wrong password. Ask your admin for the staff password.';
       errEl.classList.remove('hidden'); return;
@@ -122,17 +126,14 @@ function togglePw() {
     btn.disabled = true;
     btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Please wait…';
 
-    // Try login first
     const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
 
     if (!loginErr) {
-      // Login success
       localStorage.setItem('staff_display_email', email);
-      window.location.href = '/';
+      window.location.href = getDashboardUrl(email);
       return;
     }
 
-    // If login failed because user doesn't exist → auto register silently
     if (loginErr.message.includes('Invalid login') || loginErr.message.includes('invalid_credentials')) {
       infoEl.textContent = 'First time? Setting up your access…';
       infoEl.classList.remove('hidden');
@@ -147,18 +148,16 @@ function togglePw() {
         return;
       }
 
-      // Try login again after signup
       const { error: retryErr } = await supabase.auth.signInWithPassword({ email, password });
 
       if (!retryErr) {
         localStorage.setItem('staff_display_email', email);
-        window.location.href = '/';
+        window.location.href = getDashboardUrl(email);
         return;
       }
 
-      // Supabase email confirmation might be on
       if (retryErr.message.includes('Email not confirmed')) {
-        errEl.textContent = '⚠️ Check your email and click the confirmation link, then try again. OR turn off "Confirm email" in Supabase → Authentication → Sign In / Providers.';
+        errEl.textContent = '⚠️ Check your email and click the confirmation link, then try again.';
         errEl.classList.remove('hidden');
       } else {
         errEl.textContent = retryErr.message;

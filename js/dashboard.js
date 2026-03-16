@@ -49,11 +49,18 @@ async function loadUser() {
   const user = await getUser();
   if (user) {
     const displayEmail = getDisplayEmail() || user.email;
-    // FIX: show "Logged In" instead of "Staff"
     if (userGreeting) userGreeting.textContent = `${displayEmail} · Logged In`;
     if (authBtn) {
       authBtn.textContent = 'Logout';
       authBtn.onclick = e => { e.preventDefault(); logout(); };
+    }
+    // Show My Dashboard link
+    const dashLink = document.getElementById('dashboard-link');
+    if (dashLink) {
+      dashLink.style.display = 'flex';
+      const e = (displayEmail || '').toLowerCase();
+      const isCR = /^cr[._@]/.test(e) || e.includes('.cr@') || e.includes('cr.nie');
+      dashLink.href = `/pages/user-dashboard.html?role=${isCR ? 'cr' : 'teacher'}`;
     }
   }
 }

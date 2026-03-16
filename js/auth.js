@@ -1,7 +1,5 @@
 // ============================================================
-//  auth.js — Simplified
-//  Anyone logged in = has editor access
-//  No role checks needed
+//  auth.js — with getDashboardUrl helper
 // ============================================================
 import { supabase } from './supabase.js';
 
@@ -10,8 +8,6 @@ export async function getUser() {
   return user ?? null;
 }
 
-// Anyone logged in = 'teacher' (editor access)
-// Not logged in = 'student' (view only)
 export async function getUserRole() {
   const user = await getUser();
   return user ? 'teacher' : 'student';
@@ -19,6 +15,14 @@ export async function getUserRole() {
 
 export function getDisplayEmail() {
   return localStorage.getItem('staff_display_email') || null;
+}
+
+export function getDashboardUrl(email) {
+  const e = (email || '').toLowerCase();
+  if (/^cr[._@]/.test(e) || e.includes('.cr@') || e.includes('cr.nie')) {
+    return '/pages/user-dashboard.html?role=cr';
+  }
+  return '/pages/user-dashboard.html?role=teacher';
 }
 
 export async function logout() {

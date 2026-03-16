@@ -1,7 +1,5 @@
 // ============================================================
-//  js/rooms.js — FINAL FIXED VERSION
-//  Key fix: session_end is ALWAYS set when marking occupied
-//  so the scheduler lock always works
+//  js/rooms.js — with occupancy_logs integration
 // ============================================================
 import { supabase } from './supabase.js';
 
@@ -47,24 +45,20 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
     updates.current_faculty = sessionInfo.faculty || null;
     updates.session_start   = sessionInfo.start ? sessionInfo.start + ':00' : null;
 
-    // CRITICAL — always set session_end so scheduler lock works
     if (sessionInfo.end && sessionInfo.end.length >= 4) {
       updates.session_end = sessionInfo.end + ':00';
     } else if (sessionInfo.start && sessionInfo.start.length >= 4) {
-      // Default: 1 hour after start
       const [h, m] = sessionInfo.start.split(':').map(Number);
       const endH = String((h + 1) % 24).padStart(2, '0');
       const endM = String(m).padStart(2, '0');
       updates.session_end = `${endH}:${endM}:00`;
     } else {
-      // No times given — lock for 1 hour from now IST
       const now   = new Date();
       const utcMs = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
       const ist   = new Date(utcMs + (5.5 * 60 * 60 * 1000) + (60 * 60 * 1000));
       updates.session_end = `${String(ist.getHours()).padStart(2,'0')}:${String(ist.getMinutes()).padStart(2,'0')}:00`;
     }
   } else {
-    // Marking vacant — clear everything
     updates.current_subject = null;
     updates.current_faculty = null;
     updates.session_start   = null;
@@ -82,6 +76,45 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
     console.error('[rooms.js] Update error:', error.message);
     throw new Error(error.message);
   }
+
+  // ── Write to occupancy_logs ──────────────────────────
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const displayEmail = localStorage.getItem('staff_display_email') || user.email;
+
+      const { data: roomRow } = await supabase
+        .from('classrooms')
+        .select('room_number')
+        .eq('id', roomId)
+        .single();
+
+      const roomNumber = roomRow?.room_number || roomId;
+
+      if (status === 'occupied') {
+        await supabase.from('occupancy_logs').insert({
+          room_id:     roomId,
+          room_number: roomNumber,
+          user_id:     user.id,
+          user_name:   displayEmail,
+          role:        'teacher',
+          subject:     sessionInfo?.subject || null,
+          start_time:  new Date().toISOString(),
+          status:      'occupied'
+        });
+      } else {
+        await supabase
+          .from('occupancy_logs')
+          .update({ status: 'released', end_time: new Date().toISOString() })
+          .eq('room_id', roomId)
+          .eq('user_id', user.id)
+          .eq('status', 'occupied');
+      }
+    }
+  } catch (logErr) {
+    console.warn('[rooms.js] occupancy_logs write failed:', logErr.message);
+  }
+
   return true;
 }
 
