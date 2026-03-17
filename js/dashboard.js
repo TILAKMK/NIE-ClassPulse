@@ -19,7 +19,8 @@ const userGreeting   = document.getElementById('user-greeting');
 const todayLabel     = document.getElementById('today-label');
 
 let allRoomsCache  = [];
-let activeFloor    = 'all'; // 'all' | 'Ground Floor' | '1st Floor' | '2nd Floor' | '3rd Floor'
+let activeFloor    = 'all';
+let statsAnimated  = false; // FIX: only animate stats once on first load
 
 function floorLabel(room_number) {
   const n = String(room_number);
@@ -54,7 +55,7 @@ async function loadUser() {
       authBtn.textContent = 'Logout';
       authBtn.onclick = e => { e.preventDefault(); logout(); };
     }
-    // Show My Dashboard link
+    // Show My Dashboard link on desktop
     const dashLink = document.getElementById('dashboard-link');
     if (dashLink) {
       dashLink.style.display = 'flex';
@@ -62,15 +63,35 @@ async function loadUser() {
       const isCR = /^cr[._@]/.test(e) || e.includes('.cr@') || e.includes('cr.nie');
       dashLink.href = `/pages/user-dashboard.html?role=${isCR ? 'cr' : 'teacher'}`;
     }
+    // Show My Dashboard link on mobile nav
+    const mobileDashLink = document.getElementById('mobile-dashboard-link');
+    if (mobileDashLink) {
+      mobileDashLink.style.display = 'flex';
+      const e2 = (displayEmail || '').toLowerCase();
+      const isCR2 = /^cr[._@]/.test(e2) || e2.includes('.cr@') || e2.includes('cr.nie');
+      mobileDashLink.href = `/pages/user-dashboard.html?role=${isCR2 ? 'cr' : 'teacher'}`;
+    }
+    // Hide login link on mobile nav when logged in
+    const mobileLoginLink = document.getElementById('mobile-login-link');
+    if (mobileLoginLink) mobileLoginLink.style.display = 'none';
   }
 }
 
 async function loadStats() {
   try {
     const s = await getRoomStats();
-    animateCount(statsTotal,    s.total);
-    animateCount(statsVacant,   s.vacant);
-    animateCount(statsOccupied, s.occupied);
+    if (!statsAnimated) {
+      // First load: animate the count up
+      animateCount(statsTotal,    s.total);
+      animateCount(statsVacant,   s.vacant);
+      animateCount(statsOccupied, s.occupied);
+      statsAnimated = true;
+    } else {
+      // Subsequent updates: just set the number directly, no animation loop
+      if (statsTotal)    statsTotal.textContent    = s.total;
+      if (statsVacant)   statsVacant.textContent   = s.vacant;
+      if (statsOccupied) statsOccupied.textContent = s.occupied;
+    }
   } catch(e) { console.error(e); }
 }
 
@@ -138,27 +159,21 @@ function buildRoomCard(room) {
   const floor = floorLabel(room.room_number);
 
   const body = isOccupied && room.current_subject
-    ? `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-6">
+    ? `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4">
          <p class="text-xs text-slate-500 uppercase font-bold mb-1">Ongoing</p>
          <p class="font-bold text-primary text-sm">${room.current_subject}</p>
          ${room.session_start ? `<p class="text-xs text-slate-400 mt-0.5">${fmtTime(room.session_start)} – ${fmtTime(room.session_end)}</p>` : ''}
        </div>`
-    : `<div class="space-y-2 mb-6">
-         <div class="flex items-center gap-2 text-sm text-slate-400">
-           <span class="material-symbols-outlined text-base">location_on</span>
-           <span>${room.building}</span>
-         </div>
-         <div class="flex items-center gap-2 text-sm text-slate-400">
-           <span class="material-symbols-outlined text-base">floor</span>
-           <span>${floor}</span>
-         </div>
+    : `<div class="flex items-center gap-2 text-sm text-slate-400 mb-4">
+         <span class="material-symbols-outlined text-base">location_on</span>
+         <span>${room.building} • ${floor}</span>
        </div>`;
 
   return `
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-shadow room-card cursor-pointer" data-id="${room.id}">
       <div class="h-2 ${bar}"></div>
-      <div class="p-6">
-        <div class="flex justify-between items-start mb-4">
+      <div class="p-4 sm:p-6">
+        <div class="flex justify-between items-start mb-3">
           <div>
             <h4 class="text-2xl font-bold">${room.room_number}</h4>
             <p class="text-sm text-slate-500 dark:text-slate-400">${room.building} • ${floor}</p>
@@ -166,7 +181,7 @@ function buildRoomCard(room) {
           <span class="${badge} text-xs font-bold px-2 py-1 rounded-lg uppercase">${label}</span>
         </div>
         ${body}
-        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
           <button class="text-primary text-sm font-semibold hover:underline view-schedule-btn" data-id="${room.id}">
             View Schedule →
           </button>
@@ -185,7 +200,6 @@ function attachCardListeners() {
 }
 
 function listenRealtime() {
-  // Realtime subscription
   subscribeToRoomChanges(async () => {
     const fresh = await getAllRooms();
     allRoomsCache = fresh;
@@ -193,7 +207,7 @@ function listenRealtime() {
     loadStats();
   });
 
-  // Polling every 10 seconds — guarantees frontend always matches backend
+  // Poll every 60 seconds (was 10s — too aggressive, caused constant re-animation)
   setInterval(async () => {
     try {
       const fresh = await getAllRooms();
@@ -201,7 +215,7 @@ function listenRealtime() {
       renderRooms(fresh);
       loadStats();
     } catch(e) { console.error('[Poll] Error:', e); }
-  }, 10000);
+  }, 60000);
 }
 
 function bindEvents() {
@@ -210,7 +224,6 @@ function bindEvents() {
   filterBuilding?.addEventListener('change', () => renderRooms(allRoomsCache));
   filterStatus?.addEventListener('change',   () => renderRooms(allRoomsCache));
 
-  // Floor tab clicks
   document.querySelectorAll('.floor-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       activeFloor = tab.dataset.floor;
