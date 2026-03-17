@@ -17,6 +17,8 @@
   <style>
     body { font-family:'Lexend',sans-serif; }
     .now-glow { box-shadow: 0 0 20px rgba(19,127,236,0.35); }
+    .tabs-scroll { scrollbar-width:none; -ms-overflow-style:none; }
+    .tabs-scroll::-webkit-scrollbar { display:none; }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
@@ -58,30 +60,30 @@
   </div>
 
   <!-- Day Tabs -->
-  <div class="flex flex-wrap gap-2 mb-4">
-    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-white" data-day="all">All Days</button>
-    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Monday">Monday</button>
-    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Tuesday">Tuesday</button>
-    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Wednesday">Wednesday</button>
-    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Thursday">Thursday</button>
-    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" data-day="Friday">Friday</button>
+  <div class="tabs-scroll flex gap-2 mb-4 overflow-x-auto pb-1">
+    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-primary text-white whitespace-nowrap shrink-0" data-day="all">All Days</button>
+    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0" data-day="Monday">Monday</button>
+    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0" data-day="Tuesday">Tuesday</button>
+    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0" data-day="Wednesday">Wednesday</button>
+    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0" data-day="Thursday">Thursday</button>
+    <button class="day-tab px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 whitespace-nowrap shrink-0" data-day="Friday">Friday</button>
   </div>
 
   <!-- Filters -->
-  <div class="flex flex-wrap gap-2 mb-5">
-    <select id="filter-sem" class="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:ring-2 focus:ring-primary outline-none">
+  <div class="flex flex-col sm:flex-row gap-2 mb-5">
+    <select id="filter-sem" class="w-full sm:w-auto px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:ring-2 focus:ring-primary outline-none">
       <option value="all">All Semesters</option>
       <option value="II">2nd Semester</option>
       <option value="IV">4th Semester</option>
       <option value="VI">6th Semester</option>
     </select>
-    <select id="filter-dept" class="px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:ring-2 focus:ring-primary outline-none">
+    <select id="filter-dept" class="w-full sm:w-auto px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium focus:ring-2 focus:ring-primary outline-none">
       <option value="all">All Departments</option>
       <option value="CSE">CSE</option>
       <option value="ISE">ISE</option>
       <option value="AIML">CSE (AI&ML)</option>
     </select>
-    <div class="relative flex-1 min-w-48">
+    <div class="relative flex-1 min-w-0">
       <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
       <input id="lab-search" type="text" placeholder="Search lab, section, batch..."
              class="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-primary outline-none"/>

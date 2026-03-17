@@ -24,6 +24,9 @@
     @keyframes spin { to { transform:rotate(360deg); } }
     .pulse-dot { width:8px;height:8px;background:#22c55e;border-radius:50%;animation:pdot 1.5s ease-in-out infinite;display:inline-block; }
     @keyframes pdot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.5)} }
+    /* ── MOBILE FIX: hide scrollbar on floor-tab row ── */
+    .floor-tabs-scroll { scrollbar-width:none; -ms-overflow-style:none; }
+    .floor-tabs-scroll::-webkit-scrollbar { display:none; }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen transition-colors">
@@ -40,10 +43,12 @@
         <h1 class="text-xl font-bold tracking-tight">NIE ClassPulse</h1>
       </div>
       <div class="hidden md:flex items-center gap-3">
-        <a href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" target="_blank"
-           class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-primary px-3 py-2 rounded-lg transition-colors text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary">
-          <span class="material-symbols-outlined text-base">table_chart</span>NIE Pulse Sheet
+        <a href="/pages/labs.html"
+           class="flex items-center gap-1.5 text-white px-3 py-2 rounded-lg text-sm font-bold border border-purple-400 transition-all"
+           style="background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 0 12px rgba(168,85,247,0.6);">
+          <span class="material-symbols-outlined text-base">science</span>Lab Schedule
         </a>
+    
         <div class="h-8 w-px bg-slate-200 dark:bg-slate-700"></div>
         <!-- Theme toggle -->
         <button onclick="toggleTheme()" id="theme-btn"
@@ -51,7 +56,11 @@
           <span id="theme-icon" class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">dark_mode</span>
         </button>
         <div class="h-8 w-px bg-slate-200 dark:bg-slate-700"></div>
-        <span id="user-greeting" class="text-sm text-slate-500 dark:text-slate-400"></span>
+       <span id="user-greeting" class="text-sm text-slate-500 dark:text-slate-400"></span>
+        <a id="dashboard-link" href="/pages/user-dashboard.html" style="display:none"
+           class="flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-primary transition-colors px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+          <span class="material-symbols-outlined text-base">dashboard</span>My Dashboard
+        </a>
         <a id="auth-btn" href="/pages/login.html"
            class="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">Login</a>
       </div>
@@ -80,74 +89,87 @@
     <span id="today-label" class="text-sm text-slate-400 font-normal"></span>
   </div>
 
-  <!-- Stats — 3 cards only (no Free Soon) -->
-  <div class="grid grid-cols-3 gap-4 mb-8">
-    <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-      <div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-        <span class="material-symbols-outlined">meeting_room</span>
+  <!-- Stats — MOBILE FIX: compact card layout that works at all widths -->
+  <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+    <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+        <span class="material-symbols-outlined text-lg sm:text-2xl">meeting_room</span>
       </div>
-      <div><p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Total</p>
-      <p id="stat-total" class="text-2xl font-bold">—</p></div>
+      <div class="text-center sm:text-left">
+        <p class="text-[9px] sm:text-xs text-slate-500 uppercase tracking-wider font-bold leading-tight">Total</p>
+        <p id="stat-total" class="text-xl sm:text-2xl font-bold">—</p>
+      </div>
     </div>
-    <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-      <div class="size-12 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600 shrink-0">
-        <span class="material-symbols-outlined">event_available</span>
+    <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600 shrink-0">
+        <span class="material-symbols-outlined text-lg sm:text-2xl">event_available</span>
       </div>
-      <div><p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Vacant</p>
-      <p id="stat-vacant" class="text-2xl font-bold text-green-600">—</p></div>
+      <div class="text-center sm:text-left">
+        <p class="text-[9px] sm:text-xs text-slate-500 uppercase tracking-wider font-bold leading-tight">Vacant</p>
+        <p id="stat-vacant" class="text-xl sm:text-2xl font-bold text-green-600">—</p>
+      </div>
     </div>
-    <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
-      <div class="size-12 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-600 shrink-0">
-        <span class="material-symbols-outlined">lock_clock</span>
+    <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+      <div class="size-9 sm:size-12 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-600 shrink-0">
+        <span class="material-symbols-outlined text-lg sm:text-2xl">lock_clock</span>
       </div>
-      <div><p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Occupied</p>
-      <p id="stat-occupied" class="text-2xl font-bold text-red-600">—</p></div>
+      <div class="text-center sm:text-left">
+        <p class="text-[9px] sm:text-xs text-slate-500 uppercase tracking-wider font-bold leading-tight">Occupied</p>
+        <p id="stat-occupied" class="text-xl sm:text-2xl font-bold text-red-600">—</p>
+      </div>
     </div>
   </div>
 
-  <!-- Search + Filters -->
-  <div class="flex flex-col md:flex-row gap-3 mb-6">
-    <div class="relative flex-grow">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <span class="material-symbols-outlined text-slate-400">search</span>
+  <!-- Search + Filters — MOBILE FIX: stacked rows instead of horizontal overflow -->
+  <div class="flex flex-col gap-3 mb-6">
+    <!-- Row 1: search input + button -->
+    <div class="flex gap-2">
+      <div class="relative flex-grow">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span class="material-symbols-outlined text-slate-400">search</span>
+        </div>
+        <input id="search-input"
+               class="block w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
+               placeholder="Search room number…" type="text"/>
       </div>
-      <input id="search-input"
-             class="block w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary focus:border-transparent text-sm transition-all"
-             placeholder="Search room number…" type="text"/>
+      <button id="search-btn"
+              class="bg-primary text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 text-sm shrink-0">
+        <span class="material-symbols-outlined text-base">search</span>
+        <span class="hidden sm:inline">Search</span>
+      </button>
     </div>
-    <button id="search-btn"
-            class="bg-primary text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 text-sm">
-      <span class="material-symbols-outlined text-base">search</span>Search
-    </button>
-    <select id="filter-building"
-            class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-      <option value="all">🏢 All Buildings</option>
-      <option value="Ramanujacharya Block">Ramanujacharya Block</option>
-      <option value="Madhwacharya Block">Madhwacharya Block (MB)</option>
-    </select>
-    <select id="filter-status"
-            class="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer">
-      <option value="all">⏱ All Status</option>
-      <option value="vacant">✅ Vacant</option>
-      <option value="occupied">🔴 Occupied</option>
-    </select>
+    <!-- Row 2: dropdowns side-by-side -->
+    <div class="flex gap-2">
+      <select id="filter-building"
+              class="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer truncate">
+        <option value="all">🏢 All Buildings</option>
+        <option value="Ramanujacharya Block">Ramanujacharya Block</option>
+        <option value="Madhwacharya Block">Madhwacharya Block (MB)</option>
+      </select>
+      <select id="filter-status"
+              class="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+        <option value="all">⏱ All Status</option>
+        <option value="vacant">✅ Vacant</option>
+        <option value="occupied">🔴 Occupied</option>
+      </select>
+    </div>
   </div>
 
-  <!-- Floor Tabs -->
-  <div class="flex flex-wrap gap-2 mb-5">
-    <button class="floor-tab bg-primary text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="all">
+  <!-- Floor Tabs — MOBILE FIX: horizontally scrollable, no wrapping/clipping -->
+  <div class="floor-tabs-scroll flex gap-2 mb-5 overflow-x-auto pb-1">
+    <button class="floor-tab bg-primary text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all whitespace-nowrap shrink-0" data-floor="all">
       🏢 All Floors
     </button>
-    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="Ground Floor">
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all whitespace-nowrap shrink-0" data-floor="Ground Floor">
       G Ground Floor
     </button>
-    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="1st Floor">
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all whitespace-nowrap shrink-0" data-floor="1st Floor">
       1 First Floor
     </button>
-    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="2nd Floor">
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all whitespace-nowrap shrink-0" data-floor="2nd Floor">
       2 Second Floor
     </button>
-    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all" data-floor="3rd Floor">
+    <button class="floor-tab bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold px-4 py-2 rounded-xl transition-all whitespace-nowrap shrink-0" data-floor="3rd Floor">
       3 Third Floor
     </button>
   </div>
@@ -194,7 +216,7 @@
       <div>
         <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Institution</h3>
         <p class="text-white font-semibold text-base mb-1">The National Institute of Engineering</p>
-        <p class="text-slate-400 text-sm">Manandavadi Road, Mysuru — 570 008</p>
+        <p class="text-slate-400 text-sm">North Campus,Koorgalli,Mysuru — 570 018</p>
         <p class="text-slate-400 text-sm mt-1">Karnataka, India</p>
         <div class="mt-4 space-y-1 text-sm text-slate-400">
           <p>🏛️ Est. 1946 · Autonomous Institution</p>
@@ -209,8 +231,8 @@
           <div class="flex items-center gap-3">
             <div class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">T</div>
             <div>
-              <p class="text-white font-semibold text-sm">Tilak Bhat</p>
-              <p class="text-slate-400 text-xs">Developer · NIE CSE</p>
+              <p class="text-white font-semibold text-sm">Team AIML</p>
+              <p class="text-slate-400 text-xs">Developers · NIE AIML</p>
             </div>
           </div>
         </div>
@@ -226,7 +248,7 @@
     <!-- Bottom bar -->
     <div class="mt-10 pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
       <p class="text-slate-500 text-xs">© 2026 NIE ClassPulse · The National Institute of Engineering, Mysuru</p>
-      <p class="text-slate-600 text-xs">Made with ❤️ for NIE students & faculty</p>
+      <p class="text-slate-600 text-xs">Made with Pure ❤️ for NIE students & faculty</p>
     </div>
   </div>
 </footer>
@@ -238,11 +260,12 @@
       <span class="material-symbols-outlined">dashboard</span>
       <span class="text-[10px] font-bold">Dashboard</span>
     </a>
-    <a class="flex flex-col items-center gap-1 text-slate-400"
-       href="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" target="_blank">
-      <span class="material-symbols-outlined">table_chart</span>
-      <span class="text-[10px] font-medium">Pulse Sheet</span>
+    <a class="flex flex-col items-center gap-1" href="/pages/labs.html"
+       style="color: #a855f7; filter: drop-shadow(0 0 4px rgba(168,85,247,0.8));">
+      <span class="material-symbols-outlined">science</span>
+      <span class="text-[10px] font-bold">Labs</span>
     </a>
+    
     <a class="flex flex-col items-center gap-1 text-slate-400" href="/pages/login.html">
       <span class="material-symbols-outlined">person</span>
       <span class="text-[10px] font-medium">Login</span>

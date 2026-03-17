@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
+ <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
@@ -22,6 +22,8 @@
     @keyframes pdot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.5)} }
     .fade-in { animation:fadeIn 0.4s ease; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    /* MOBILE FIX: smooth scroll on iOS for the table */
+    #table-wrap { -webkit-overflow-scrolling: touch; }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
@@ -170,15 +172,15 @@
       </div>
 
       <div id="table-wrap" class="hidden overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm" style="min-width:600px">
           <thead>
             <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Room</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Subject</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Start Time</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">End Time</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Room</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Subject</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Start Time</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">End Time</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
           <tbody id="logs-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
@@ -316,12 +318,12 @@
         : `<span class="text-slate-300 dark:text-slate-700 text-xs">—</span>`;
       return `
         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isActive ? 'bg-red-50/30 dark:bg-red-950/10' : ''}">
-          <td class="px-6 py-4"><a href="/pages/room-detail.html?id=${log.room_id || ''}" class="font-bold text-primary hover:underline">${esc(log.room_number)}</a></td>
-          <td class="px-6 py-4 text-slate-600 dark:text-slate-300">${log.subject ? esc(log.subject) : '<span class="text-slate-300 dark:text-slate-600">—</span>'}</td>
-          <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">${fmtDateTime(log.start_time)}</td>
-          <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">${log.end_time ? fmtDateTime(log.end_time) : '<span class="text-slate-300 dark:text-slate-600">—</span>'}</td>
-          <td class="px-6 py-4">${badge}</td>
-          <td class="px-6 py-4">${action}</td>
+          <td class="px-4 py-3"><a href="/pages/room-detail.html?id=${log.room_id || ''}" class="font-bold text-primary hover:underline">${esc(log.room_number)}</a></td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">${log.subject ? esc(log.subject) : '<span class="text-slate-300 dark:text-slate-600">—</span>'}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">${fmtDateTime(log.start_time)}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">${log.end_time ? fmtDateTime(log.end_time) : '<span class="text-slate-300 dark:text-slate-600">—</span>'}</td>
+          <td class="px-4 py-3">${badge}</td>
+          <td class="px-4 py-3">${action}</td>
         </tr>`;
     }).join('');
   }
