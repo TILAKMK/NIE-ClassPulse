@@ -79,7 +79,7 @@ Students waste time searching, interrupt classes, and lose productivity.
 
 <h2>🚀 Live Demo</h2>
 <p>
-👉 <a href="https://nie-classpulse.vercel.app">https://nie-classpulse.vercel.app</a>
+👉 <a href="https://nieclasspulse.vercel.app">https://nie-classpulse.vercel.app</a>
 </p>
 
 <hr>
