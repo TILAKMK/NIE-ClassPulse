@@ -1,160 +1,193 @@
-# NIE ClassPulse — Full Setup Guide
-## From zero to deployed in 6 steps
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NIE ClassPulse</title>
 
----
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.6;
+    }
 
-## 📁 Folder Structure
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 40px 20px;
+    }
 
-```
-classpulse/
-├── index.html               ← Main dashboard (your existing UI, now dynamic)
-├── vercel.json              ← Vercel routing config
-├── supabase-schema.sql      ← Paste this into Supabase SQL Editor
-├── js/
-│   ├── supabase.js          ← Supabase client (add YOUR keys here)
-│   ├── auth.js              ← Login / logout / role helpers
-│   ├── rooms.js             ← All database queries
-│   └── dashboard.js         ← Powers index.html
-└── pages/
-    ├── login.html           ← Login page for teachers & CRs
-    └── room-detail.html     ← Individual room view + status update
-```
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+      color: #58a6ff;
+    }
 
----
+    h2 {
+      margin-top: 40px;
+      color: #79c0ff;
+    }
 
-## STEP 1 — Set up Supabase (5 min)
+    .tagline {
+      font-size: 1.2rem;
+      color: #8b949e;
+      margin-bottom: 30px;
+    }
 
-1. Go to https://supabase.com → **New Project**
-2. Give it a name (e.g. `nie-classpulse`) and choose a region
-3. Wait for the project to start (~1 minute)
-4. In the left sidebar → **SQL Editor** → **New Query**
-5. **Copy the entire contents of `supabase-schema.sql`** and paste it in
-6. Click **Run** → you'll see all tables created with sample data
+    .card {
+      background: #161b22;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
 
----
+    .highlight {
+      color: #3fb950;
+    }
 
-## STEP 2 — Get your API keys
+    ul {
+      padding-left: 20px;
+    }
 
-1. In Supabase → **Project Settings** (gear icon) → **API**
-2. Copy:
-   - **Project URL** (looks like `https://abcxyz.supabase.co`)
-   - **anon public** key (long string)
-3. Open `js/supabase.js` and replace:
+    li {
+      margin-bottom: 10px;
+    }
 
-```js
-const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';  // ← paste here
-const SUPABASE_ANON = 'YOUR_ANON_PUBLIC_KEY';                 // ← paste here
-```
+    .badge {
+      display: inline-block;
+      background: #21262d;
+      padding: 8px 12px;
+      border-radius: 20px;
+      margin: 5px;
+      font-size: 0.9rem;
+    }
 
----
+    .footer {
+      margin-top: 50px;
+      text-align: center;
+      color: #8b949e;
+    }
 
-## STEP 3 — Create teacher/CR accounts
+    a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
 
-1. Supabase → **Authentication** → **Users** → **Add User**
-2. Enter the teacher's email and a temporary password
-3. Click **Create**
-4. Now go to **Table Editor** → `profiles` table
-5. Find that user's row and change `role` from `student` → `teacher` (or `cr`)
+    a:hover {
+      text-decoration: underline;
+    }
 
-> Students don't need accounts — they can view the dashboard without logging in.
+  </style>
+</head>
 
----
+<body>
+  <div class="container">
 
-## STEP 4 — Enable Realtime
+    <h1>🚀 NIE ClassPulse</h1>
+    <p class="tagline">
+      ⚡ Real-Time Classroom Availability System <br>
+      <span class="highlight">Stop wandering. Start knowing.</span>
+    </p>
 
-1. Supabase → **Database** → **Replication**
-2. Under **Tables** toggle ON the `classrooms` table
-3. This makes status changes appear instantly without page refresh
+    <div class="card">
+      <h2>🧠 The Idea</h2>
+      <p>
+        Finding an empty classroom in college is frustrating.
+        Students waste time searching, interrupt classes, and lose productivity.
+      </p>
+      <p class="highlight">
+        👉 ClassPulse solves this with live classroom tracking.
+      </p>
+    </div>
 
----
+    <div class="card">
+      <h2>✨ What It Does</h2>
+      <ul>
+        <li>🔹 Displays all classrooms in a single dashboard</li>
+        <li>🔹 Shows <span class="highlight">Occupied / Vacant</span> status in real-time</li>
+        <li>🔹 Allows CRs & Teachers to update room status</li>
+        <li>🔹 Updates instantly across all users</li>
+      </ul>
+    </div>
 
-## STEP 5 — Deploy on Vercel (3 min)
+    <div class="card">
+      <h2>⚙️ Tech Stack</h2>
+      <div>
+        <span class="badge">HTML</span>
+        <span class="badge">CSS</span>
+        <span class="badge">JavaScript</span>
+        <span class="badge">Supabase</span>
+        <span class="badge">Vercel</span>
+      </div>
+    </div>
 
-1. Upload your project folder to GitHub:
-   ```
-   git init
-   git add .
-   git commit -m "NIE ClassPulse initial"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/nie-classpulse.git
-   git push -u origin main
-   ```
+    <div class="card">
+      <h2>🔥 Key Features</h2>
+      <ul>
+        <li>⚡ Realtime Updates (no refresh needed)</li>
+        <li>🔐 Role-Based Access (Student / CR / Teacher)</li>
+        <li>📱 Clean & Minimal UI</li>
+        <li>🌐 Deployed and accessible anywhere</li>
+      </ul>
+    </div>
 
-2. Go to https://vercel.com → **New Project**
-3. Import your GitHub repo
-4. Framework: **Other** (plain HTML)
-5. Click **Deploy**
+    <div class="card">
+      <h2>🧩 How It Works</h2>
+      <ul>
+        <li>1️⃣ Dashboard loads data from Supabase</li>
+        <li>2️⃣ Rooms displayed as cards</li>
+        <li>3️⃣ Realtime listener tracks changes</li>
+        <li>4️⃣ Updates reflect instantly for all users</li>
+      </ul>
+    </div>
 
-That's it! Vercel gives you a URL like `nie-classpulse.vercel.app`
+    <div class="card">
+      <h2>🎯 Why This Project</h2>
+      <ul>
+        <li>✔ Solves a real-world college problem</li>
+        <li>✔ Uses modern backend (Supabase)</li>
+        <li>✔ Implements realtime system</li>
+        <li>✔ Clean architecture</li>
+      </ul>
+    </div>
 
----
+    <div class="card">
+      <h2>👨‍💻 My Contribution</h2>
+      <ul>
+        <li>Designed system architecture</li>
+        <li>Built realtime database logic</li>
+        <li>Developed responsive UI</li>
+        <li>Implemented authentication & roles</li>
+      </ul>
+    </div>
 
-## STEP 6 — Add environment variables (optional but secure)
+    <div class="card">
+      <h2>🚀 Live Demo</h2>
+      <p>
+        👉 <a href="https://nie-classpulse.vercel.app" target="_blank">
+        https://nie-classpulse.vercel.app
+        </a>
+      </p>
+    </div>
 
-Instead of putting API keys in `supabase.js`, use Vercel env vars:
+    <div class="card">
+      <h2>📌 Future Improvements</h2>
+      <ul>
+        <li>🔔 Notifications for free rooms</li>
+        <li>📊 Analytics dashboard</li>
+        <li>📅 Timetable integration</li>
+        <li>🌙 Dark mode</li>
+      </ul>
+    </div>
 
-1. Vercel Dashboard → Your Project → **Settings** → **Environment Variables**
-2. Add:
-   - `SUPABASE_URL` = your URL
-   - `SUPABASE_ANON_KEY` = your anon key
+    <div class="footer">
+      ⭐ Built as a real solution — not just a project
+    </div>
 
-Then in `supabase.js` you can use them via a build step — for now, direct values in the JS file are fine for a college project (the anon key is safe to expose).
-
----
-
-## How it works
-
-```
-Student opens website
-        ↓
-index.html loads → dashboard.js runs
-        ↓
-dashboard.js calls getAllRooms() → supabase.from('classrooms').select()
-        ↓
-Supabase returns live data → cards rendered on screen
-        ↓
-subscribeToRoomChanges() listens for any UPDATE on classrooms table
-        ↓
-When a teacher updates a room → card flips instantly for ALL users
-```
-
----
-
-## Role-based access
-
-| Action                    | Student | CR  | Teacher |
-|---------------------------|---------|-----|---------|
-| View dashboard            | ✅      | ✅  | ✅      |
-| View room schedule        | ✅      | ✅  | ✅      |
-| Mark room as occupied     | ❌      | ✅  | ✅      |
-| Mark room as vacant       | ❌      | ✅  | ✅      |
-
-This is enforced in TWO places:
-1. **Frontend** — `getUserRole()` hides the editor panel from students
-2. **Supabase RLS** — even if someone bypasses the UI, the database
-   rejects UPDATE queries from non-teacher/CR accounts
-
----
-
-## GitHub Copilot tips for VS Code
-
-Open any JS file and try these prompts:
-
-- `// fetch all vacant rooms and show a toast notification`
-- `// add pagination to the room grid (10 rooms per page)`
-- `// send email notification when a room is freed`
-- `// add a dark mode toggle button`
-
-Copilot will autocomplete directly inside your existing code.
-
----
-
-## Common issues
-
-| Problem | Fix |
-|---------|-----|
-| "Failed to fetch" error | Check your SUPABASE_URL and ANON key in supabase.js |
-| No rooms showing | Make sure you ran supabase-schema.sql and it inserted sample data |
-| Login not working | Check Authentication is enabled in Supabase → Settings |
-| RLS blocking reads | Make sure the "Anyone can view classrooms" policy was created |
-| Vercel 404 on page refresh | Make sure vercel.json exists with the rewrite rule |
+  </div>
+</body>
+</html>
