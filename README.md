@@ -117,7 +117,7 @@ Everyone sees it ⚡
 
 ---
 
-<h2>👨‍💻 My Contribution</h2>
+<h2>👨‍💻 Our Contribution</h2>
 
 <ul>
   <li>Designed full system</li>
