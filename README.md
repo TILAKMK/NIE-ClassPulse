@@ -100,7 +100,7 @@ Everyone sees it ⚡
 <h2>🚀 Live Demo</h2>
 
 <p>
-👉 <a href="https://nieclasspulse.vercel.app">https://nie-classpulse.vercel.app</a>
+👉 <a href="https://nieclasspulse.vercel.app">https://nieclasspulse.vercel.app</a>
 </p>
 
 ---
