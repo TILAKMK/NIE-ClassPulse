@@ -20,7 +20,7 @@
 <h2>🎥 Live Demo Preview</h2>
 
 <p align="center">
-  <img src="demo.gif" width="90%" />
+  <img src="demo.mp4" width="90%" />
 </p>
 
 ---
