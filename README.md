@@ -22,6 +22,7 @@
 <p align="center">
   <img src="demo.gif" width="90%" />
 </p>
+
 ---
 
 <h2>💡 Why This Exists</h2>
