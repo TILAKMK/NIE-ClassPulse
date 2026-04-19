@@ -200,18 +200,14 @@
            class="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">Login</a>
       </div>
       <!-- Mobile right -->
-      <div class="flex md:hidden items-center gap-2">
+      <div class="flex md:hidden items-center gap-1.5 ml-auto">
         <button onclick="toggleTheme()"
-                class="size-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                class="size-9 shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
           <span id="theme-icon-mobile" class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">dark_mode</span>
         </button>
-        <!-- mob-header-person: dashboard.js updates href when logged in -->
-        <a href="/pages/login.html" class="mob-header-person size-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-          <span class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">person</span>
-        </a>
         <!-- Hamburger Menu Button -->
         <button id="mobile-menu-btn" onclick="toggleMobileMenu()"
-                class="size-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                class="size-9 shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
           <span id="menu-icon" class="material-symbols-outlined">menu</span>
         </button>
       </div>
