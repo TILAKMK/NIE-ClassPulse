@@ -126,13 +126,16 @@
       opacity: 0;
       overflow: hidden;
       visibility: hidden;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: fixed;
+      top: 64px;
+      left: 0;
       width: 100%;
-      z-index: 40;
+      z-index: 100;
+      background-color: #0f172a !important;
     }
     #mobile-menu.open {
-      max-height: 500px;
+      max-height: 100vh;
       opacity: 1;
       visibility: visible;
     }
@@ -149,15 +152,20 @@
     .mobile-nav-link {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 1rem 1.5rem;
-      color: white !important;
-      transition: all 0.2s;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      gap: 12px;
+      padding: 16px 24px;
+      color: #ffffff !important;
+      font-size: 16px;
+      font-weight: 500;
       text-decoration: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: background-color 0.2s;
     }
     .mobile-nav-link:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    .mobile-nav-link span {
+      color: #ffffff !important;
     }
   </style>
 </head>
@@ -227,30 +235,29 @@
   </div>
   
   <!-- Mobile Dropdown Menu -->
-  <div id="mobile-menu" class="md:hidden bg-[#0f172a] border-b border-white/10">
-    <div class="flex flex-col py-2">
+  <div id="mobile-menu" class="md:hidden">
+    <div class="flex flex-col">
       <a href="javascript:void(0)" onclick="showSection('home'); toggleMobileMenu()" class="mobile-nav-link">
-        <span class="material-symbols-outlined text-primary">home</span>
-        <span class="font-medium">Home</span>
+        <span class="material-symbols-outlined">home</span>
+        <span>Home</span>
       </a>
       <a href="/pages/labs.html" onclick="toggleMobileMenu()" class="mobile-nav-link">
-        <span class="material-symbols-outlined text-purple-400">science</span>
-        <span class="font-medium">Lab Schedule</span>
+        <span class="material-symbols-outlined">science</span>
+        <span>Lab Schedule</span>
       </a>
       <a href="/pages/reserved.html" onclick="toggleMobileMenu()" class="mobile-nav-link">
-        <span class="material-symbols-outlined text-slate-400">event_available</span>
-        <span class="font-medium">Reserved Classes</span>
+        <span class="material-symbols-outlined">event_available</span>
+        <span>Reserved Classes</span>
       </a>
       <a href="javascript:void(0)" onclick="showSection('founders'); toggleMobileMenu()" class="mobile-nav-link">
-        <span class="material-symbols-outlined text-slate-400">groups</span>
-        <span class="font-medium">Founders</span>
+        <span class="material-symbols-outlined">groups</span>
+        <span>Founders</span>
       </a>
       <a href="javascript:void(0)" onclick="showSection('about'); toggleMobileMenu()" class="mobile-nav-link">
-        <span class="material-symbols-outlined text-slate-400">info</span>
-        <span class="font-medium">About</span>
+        <span class="material-symbols-outlined">info</span>
+        <span>About</span>
       </a>
-      <div class="h-px bg-white/10 my-2"></div>
-      <a href="/pages/login.html" onclick="toggleMobileMenu()" class="mobile-nav-link text-primary font-bold">
+      <a href="/pages/login.html" onclick="toggleMobileMenu()" class="mobile-nav-link" style="border-bottom: none;">
         <span class="material-symbols-outlined">login</span>
         <span>Login / Sign In</span>
       </a>
