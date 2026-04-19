@@ -127,11 +127,24 @@
       overflow: hidden;
       visibility: hidden;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      width: 100%;
+      z-index: 40;
     }
     #mobile-menu.open {
       max-height: 500px;
       opacity: 1;
       visibility: visible;
+    }
+    .active-nav {
+      background-color: rgba(19, 127, 236, 0.1) !important;
+      border-color: #137fec !important;
+      color: #137fec !important;
+    }
+    body.light-mode .active-nav {
+      background-color: #f1f5f9 !important;
+      border-color: #137fec !important;
+      color: #137fec !important;
     }
     .mobile-nav-link {
       display: flex;
@@ -164,12 +177,11 @@
       </div>
       <div class="hidden md:flex items-center gap-3">
         <a href="javascript:void(0)" onclick="showSection('home')" id="nav-home"
-           class="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-all active-nav bg-primary text-white border-primary">
+           class="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors text-slate-600 dark:text-slate-300 active-nav">
           <span class="material-symbols-outlined text-base">home</span>Home
         </a>
-        <a href="/pages/labs.html"
-           class="flex items-center gap-1.5 text-white px-3 py-2 rounded-lg text-sm font-bold border border-purple-400 transition-all"
-           style="background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 0 12px rgba(168,85,247,0.6);">
+        <a href="/pages/labs.html" id="nav-labs"
+           class="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors text-slate-600 dark:text-slate-300">
           <span class="material-symbols-outlined text-base">science</span>Lab Schedule
         </a>
         <a href="/pages/reserved.html"
@@ -215,7 +227,7 @@
   </div>
   
   <!-- Mobile Dropdown Menu -->
-  <div id="mobile-menu" class="md:hidden w-full bg-[#0f172a] absolute top-full left-0 z-40 border-b border-white/10">
+  <div id="mobile-menu" class="md:hidden bg-[#0f172a] border-b border-white/10">
     <div class="flex flex-col py-2">
       <a href="javascript:void(0)" onclick="showSection('home'); toggleMobileMenu()" class="mobile-nav-link">
         <span class="material-symbols-outlined text-primary">home</span>
@@ -662,16 +674,15 @@
 <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 md:hidden z-50"
      style="padding-bottom: env(safe-area-inset-bottom);">
   <div class="flex justify-around items-center h-16">
-    <a class="flex flex-col items-center gap-1 text-primary" href="/">
+    <a id="mob-home" class="flex flex-col items-center gap-1 text-primary cursor-pointer" onclick="showSection('home')">
       <span class="material-symbols-outlined">dashboard</span>
       <span class="text-[10px] font-bold">Dashboard</span>
     </a>
-    <a class="flex flex-col items-center gap-1" href="/pages/labs.html"
-       style="color: #a855f7; filter: drop-shadow(0 0 4px rgba(168,85,247,0.8));">
+    <a id="mob-labs" class="flex flex-col items-center gap-1 text-slate-400" href="/pages/labs.html">
       <span class="material-symbols-outlined">science</span>
       <span class="text-[10px] font-bold">Labs</span>
     </a>
-    <a class="flex flex-col items-center gap-1 text-slate-400" href="/pages/reserved.html">
+    <a id="mob-reserved" class="flex flex-col items-center gap-1 text-slate-400" href="/pages/reserved.html">
       <span class="material-symbols-outlined">event_available</span>
       <span class="text-[10px] font-medium">Reserved</span>
     </a>
@@ -722,16 +733,24 @@ function showSection(sectionId) {
     target.classList.remove('hidden');
   }
 
-  // Update navbar links
+  // Update Top Navbar Link Styles
   document.querySelectorAll('.nav-link').forEach(link => {
-    // Reset to inactive styles
-    link.className = "nav-link flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-primary px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors";
+    link.classList.remove('active-nav');
   });
+  const activeTopLink = document.getElementById('nav-' + sectionId);
+  if (activeTopLink) {
+    activeTopLink.classList.add('active-nav');
+  }
 
-  // Set active link style
-  const activeLink = document.getElementById('nav-' + sectionId);
-  if (activeLink) {
-    activeLink.className = "nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-all active-nav bg-primary text-white border-primary";
+  // Update Bottom Mobile Nav Styles
+  document.querySelectorAll('.fixed.bottom-0 a').forEach(link => {
+    link.classList.remove('text-primary');
+    link.classList.add('text-slate-400');
+  });
+  const activeMobLink = document.getElementById('mob-' + sectionId);
+  if (activeMobLink) {
+    activeMobLink.classList.remove('text-slate-400');
+    activeMobLink.classList.add('text-primary');
   }
 
   // Scroll to top
