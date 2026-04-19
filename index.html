@@ -3,13 +3,6 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <script>
-    if(localStorage.getItem('theme')==='dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.body.classList.add('light-mode');
-    }
-  </script>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
@@ -122,22 +115,26 @@
     }
     /* Mobile Menu Styles */
     #mobile-menu {
+      position: fixed !important;
+      top: 70px !important;
+      left: 0 !important;
+      width: 100% !important;
+      background-color: #0f172a !important;
+      z-index: 9999 !important;
+      height: auto;
+      border-top: 1px solid rgba(255,255,255,0.1);
       max-height: 0;
       opacity: 0;
       overflow: hidden;
       visibility: hidden;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: fixed;
-      top: 64px;
-      left: 0;
-      width: 100%;
-      z-index: 100;
-      background-color: #0f172a !important;
     }
     #mobile-menu.open {
       max-height: 100vh;
-      opacity: 1;
+      opacity: 1 !important;
       visibility: visible;
+      background-color: #0f172a !important;
+      z-index: 9999 !important;
     }
     .active-nav {
       background-color: rgba(19, 127, 236, 0.1) !important;
@@ -150,15 +147,13 @@
       color: #137fec !important;
     }
     .mobile-nav-link {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      display: block;
       padding: 16px 24px;
-      color: #ffffff !important;
+      color: #ffffff;
       font-size: 16px;
       font-weight: 500;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
       text-decoration: none;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       transition: background-color 0.2s;
     }
     .mobile-nav-link:hover {
@@ -237,27 +232,27 @@
   <!-- Mobile Dropdown Menu -->
   <div id="mobile-menu" class="md:hidden">
     <div class="flex flex-col">
-      <a href="javascript:void(0)" onclick="showSection('home'); toggleMobileMenu()" class="mobile-nav-link">
+      <a href="javascript:void(0)" onclick="showSection('home'); closeMobileMenu()" class="mobile-nav-link">
         <span class="material-symbols-outlined">home</span>
         <span>Home</span>
       </a>
-      <a href="/pages/labs.html" onclick="toggleMobileMenu()" class="mobile-nav-link">
+      <a href="/pages/labs.html" onclick="closeMobileMenu()" class="mobile-nav-link">
         <span class="material-symbols-outlined">science</span>
         <span>Lab Schedule</span>
       </a>
-      <a href="/pages/reserved.html" onclick="toggleMobileMenu()" class="mobile-nav-link">
+      <a href="/pages/reserved.html" onclick="closeMobileMenu()" class="mobile-nav-link">
         <span class="material-symbols-outlined">event_available</span>
         <span>Reserved Classes</span>
       </a>
-      <a href="javascript:void(0)" onclick="showSection('founders'); toggleMobileMenu()" class="mobile-nav-link">
+      <a href="javascript:void(0)" onclick="showSection('founders'); closeMobileMenu()" class="mobile-nav-link">
         <span class="material-symbols-outlined">groups</span>
         <span>Founders</span>
       </a>
-      <a href="javascript:void(0)" onclick="showSection('about'); toggleMobileMenu()" class="mobile-nav-link">
+      <a href="javascript:void(0)" onclick="showSection('about'); closeMobileMenu()" class="mobile-nav-link">
         <span class="material-symbols-outlined">info</span>
         <span>About</span>
       </a>
-      <a href="/pages/login.html" onclick="toggleMobileMenu()" class="mobile-nav-link" style="border-bottom: none;">
+      <a href="/pages/login.html" onclick="closeMobileMenu()" class="mobile-nav-link" style="border-bottom: none;">
         <span class="material-symbols-outlined">login</span>
         <span>Login / Sign In</span>
       </a>
@@ -717,78 +712,109 @@
 </div>
 
 <script>
-function toggleTheme() {
-  const isDark = document.documentElement.classList.toggle('dark');
-  const isLight = document.body.classList.toggle('light-mode');
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  const icon = isDark ? 'light_mode' : 'dark_mode';
-  ['theme-icon','theme-icon-mobile'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = icon;
-  });
-}
-
-function showSection(sectionId) {
-  // Hide all sections
-  document.querySelectorAll('.content-section').forEach(section => {
-    section.classList.add('hidden');
-  });
-  
-  // Show target section
-  const target = document.getElementById(sectionId + '-section');
-  if (target) {
-    target.classList.remove('hidden');
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize theme on page load
+  if(localStorage.getItem('theme')==='dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.body.classList.add('light-mode');
   }
 
-  // Update Top Navbar Link Styles
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.classList.remove('active-nav');
-  });
-  const activeTopLink = document.getElementById('nav-' + sectionId);
-  if (activeTopLink) {
-    activeTopLink.classList.add('active-nav');
-  }
+  window.toggleTheme = function() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    const isLight = document.body.classList.toggle('light-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    const icon = isDark ? 'light_mode' : 'dark_mode';
+    ['theme-icon','theme-icon-mobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = icon;
+    });
+  };
 
-  // Update Bottom Mobile Nav Styles
-  document.querySelectorAll('.fixed.bottom-0 a').forEach(link => {
-    link.classList.remove('text-primary');
-    link.classList.add('text-slate-400');
-  });
-  const activeMobLink = document.getElementById('mob-' + sectionId);
-  if (activeMobLink) {
-    activeMobLink.classList.remove('text-slate-400');
-    activeMobLink.classList.add('text-primary');
-  }
+  window.showSection = function(sectionId) {
+    // Hide all sections
+    document.querySelectorAll('.content-section').forEach(section => {
+      section.classList.add('hidden');
+    });
+    
+    // Show target section
+    const target = document.getElementById(sectionId + '-section');
+    if (target) {
+      target.classList.remove('hidden');
+    }
 
-  // Scroll to top
-  window.scrollTo(0, 0);
-}
+    // Update Top Navbar Link Styles
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.remove('active-nav');
+    });
+    const activeTopLink = document.getElementById('nav-' + sectionId);
+    if (activeTopLink) {
+      activeTopLink.classList.add('active-nav');
+    }
 
-function toggleMobileMenu() {
-  const menu = document.getElementById('mobile-menu');
-  const icon = document.getElementById('menu-icon');
-  const isOpen = menu.classList.toggle('open');
-  
-  if (icon) {
-    icon.textContent = isOpen ? 'close' : 'menu';
-  }
-}
+    // Update Bottom Mobile Nav Styles
+    document.querySelectorAll('.fixed.bottom-0 a').forEach(link => {
+      link.classList.remove('text-primary');
+      link.classList.add('text-slate-400');
+    });
+    const activeMobLink = document.getElementById('mob-' + sectionId);
+    if (activeMobLink) {
+      activeMobLink.classList.remove('text-slate-400');
+      activeMobLink.classList.add('text-primary');
+    }
 
-window.addEventListener('DOMContentLoaded', () => {
+    // Scroll to top
+    window.scrollTo(0, 0);
+  };
+
+  window.toggleMobileMenu = function() {
+    const menu = document.getElementById('mobile-menu');
+    const icon = document.getElementById('menu-icon');
+    if (!menu) return;
+    const isOpen = menu.classList.toggle('open');
+    
+    if (icon) {
+      icon.textContent = isOpen ? 'close' : 'menu';
+    }
+
+    // Add or remove overflow: hidden from body
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  };
+
+  window.closeMobileMenu = function() {
+    const menu = document.getElementById('mobile-menu');
+    const icon = document.getElementById('menu-icon');
+    if (!menu) return;
+    
+    menu.classList.remove('open');
+    if (icon) {
+      icon.textContent = 'menu';
+    }
+    document.body.style.overflow = '';
+  };
+
+  // Initial theme icon sync
   const isDark = document.documentElement.classList.contains('dark');
   const icon = isDark ? 'light_mode' : 'dark_mode';
   ['theme-icon','theme-icon-mobile'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = icon;
   });
+
+  // Theme toggle click handler
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('light-mode');
+    });
+  }
 });
 </script>
 <script src="/js/chaos-bg.js?v=6.0"></script>
 <script type="module" src="/js/dashboard.js"></script>
-<script>
-document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    document.body.classList.toggle('light-mode');
-});
-</script>
 </body>
 </html>
