@@ -1,7 +1,6 @@
 // ============================================================
 //  js/dashboard.js  —  Fixed: realtime, floor tabs, staff label
 // ============================================================
-import { initScheduler }                                    from './scheduler.js';
 import { getAllRooms, getRoomStats, subscribeToRoomChanges } from './rooms.js';
 import { getUser, getDisplayEmail, logout }                  from './auth.js';
 
@@ -39,8 +38,7 @@ async function init() {
   }
   await loadUser();
   await loadRooms();
-  await loadStats();
-  initScheduler();
+  await loadStats(true);
   bindEvents();
   listenRealtime();
 }
@@ -86,12 +84,18 @@ async function loadUser() {
   }
 }
 
-async function loadStats() {
+async function loadStats(animate = false) {
   try {
     const s = await getRoomStats();
-    animateCount(statsTotal,    s.total);
-    animateCount(statsVacant,   s.vacant);
-    animateCount(statsOccupied, s.occupied);
+    if (animate) {
+      animateCount(statsTotal,    s.total);
+      animateCount(statsVacant,   s.vacant);
+      animateCount(statsOccupied, s.occupied);
+      return;
+    }
+    if (statsTotal) statsTotal.textContent = String(s.total);
+    if (statsVacant) statsVacant.textContent = String(s.vacant);
+    if (statsOccupied) statsOccupied.textContent = String(s.occupied);
   } catch(e) { console.error(e); }
 }
 
@@ -210,18 +214,18 @@ function listenRealtime() {
     const fresh = await getAllRooms();
     allRoomsCache = fresh;
     renderRooms(fresh);
-    loadStats();
+    loadStats(false);
   });
 
-  // Polling every 10 seconds — guarantees frontend always matches backend
+  // Light polling as fallback in case realtime events are delayed
   setInterval(async () => {
     try {
       const fresh = await getAllRooms();
       allRoomsCache = fresh;
       renderRooms(fresh);
-      loadStats();
+      loadStats(false);
     } catch(e) { console.error('[Poll] Error:', e); }
-  }, 10000);
+  }, 60000);
 }
 
 function bindEvents() {
