@@ -3,10 +3,17 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
+  <script>
+    if(localStorage.getItem('theme')==='dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.body.classList.add('light-mode');
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script>
     tailwind.config = {
       darkMode:"class",
@@ -27,9 +34,96 @@
     /* Hide scrollbar on floor tabs */
     .no-scrollbar::-webkit-scrollbar { display:none; }
     .no-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
+    body {
+        background: url('placidplace-brain-24669.gif') no-repeat center center fixed !important;
+        background-size: cover !important;
+        color: #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.75);
+        z-index: 0;
+        pointer-events: none;
+        transition: background 0.3s ease;
+    }
+    body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at 60% 40%, rgba(59,130,246,0.2), transparent 50%);
+        filter: blur(80px);
+        z-index: 0;
+        pointer-events: none;
+    }
+    .vignette {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.9));
+        z-index: 1;
+        pointer-events: none;
+    }
+    header, nav, .container, .card {
+        position: relative !important;
+        z-index: 10 !important;
+    }
+    body.light-mode {
+      color: #111;
+    }
+    body.light-mode::before {
+      background: rgba(255, 255, 255, 0.5) !important;
+      z-index: 0;
+    }
+    body.light-mode .vignette {
+      display: none !important;
+    }
+
+    /* Light mode text fixes */
+    body.light-mode * {
+      color: inherit;
+    }
+    body.light-mode h1,
+    body.light-mode h2,
+    body.light-mode h3,
+    body.light-mode h4 {
+      color: #1e293b;
+    }
+    body.light-mode p,
+    body.light-mode span,
+    body.light-mode li {
+      color: #374151;
+    }
+    body.light-mode .card,
+    body.light-mode .founder-card,
+    body.light-mode .about-card {
+      background-color: #ffffff !important;
+      color: #111 !important;
+    }
+    
+    /* Ensure Footer stays dark in both modes */
+    body.light-mode footer,
+    body.light-mode footer * {
+      background-color: #0f172a !important;
+      color: #ffffff !important;
+    }
+
+    body.light-mode nav a,
+    body.light-mode .nav-link {
+      color: #1e293b !important;
+    }
+    body.light-mode .active-nav span,
+    body.light-mode .active-nav {
+      color: #ffffff !important;
+    }
+    body.light-mode .pulse-dot {
+      border: 1px solid #16a34a;
+    }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen transition-colors">
+<div class="vignette"></div>
 
 <!-- Nav -->
 <header class="sticky top-0 z-50 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
@@ -43,6 +137,10 @@
         <h1 class="text-xl font-bold tracking-tight">NIE ClassPulse</h1>
       </div>
       <div class="hidden md:flex items-center gap-3">
+        <a href="javascript:void(0)" onclick="showSection('home')" id="nav-home"
+           class="nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-all active-nav bg-primary text-white border-primary">
+          <span class="material-symbols-outlined text-base">home</span>Home
+        </a>
         <a href="/pages/labs.html"
            class="flex items-center gap-1.5 text-white px-3 py-2 rounded-lg text-sm font-bold border border-purple-400 transition-all"
            style="background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 0 12px rgba(168,85,247,0.6);">
@@ -51,6 +149,14 @@
         <a href="/pages/reserved.html"
            class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-primary px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors">
           <span class="material-symbols-outlined text-base">event_available</span>Reserved Classes
+        </a>
+        <a href="javascript:void(0)" onclick="showSection('founders')" id="nav-founders"
+           class="nav-link flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-primary px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors">
+          <span class="material-symbols-outlined text-base">groups</span>Founders
+        </a>
+        <a href="javascript:void(0)" onclick="showSection('about')" id="nav-about"
+           class="nav-link flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-primary px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors">
+          <span class="material-symbols-outlined text-base">info</span>About
         </a>
         <a id="prebook-btn" href="/pages/prebook.html" style="display:none"
            class="flex items-center gap-1.5 bg-primary text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
@@ -82,6 +188,7 @@
   </div>
 </header>
 
+<div id="home-section" class="content-section">
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24">
 
   <!-- Live banner -->
@@ -187,7 +294,244 @@
   </div>
 </main>
 
-<!-- Footer -->
+<!-- Footer for Home Section -->
+<footer class="bg-slate-900 dark:bg-black text-white pb-20 md:pb-0 w-full" style="margin-top:20px;">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <img src="/logo.png" alt="NIE ClassPulse" class="h-12 w-12 rounded-xl object-cover" onerror="this.style.display='none'"/>
+          <div class="bg-primary p-2 rounded-xl" style="display:none">
+            <span class="material-symbols-outlined text-white text-2xl">pulse_alert</span>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold">NIE ClassPulse</h2>
+            <p class="text-xs text-slate-400">Live Classroom Tracker</p>
+          </div>
+        </div>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          Real-time classroom availability tracker for The National Institute of Engineering, Mysuru.
+          Know which room is free before you walk there.
+        </p>
+        <div class="mt-4 flex items-center gap-2">
+          <span class="pulse-dot"></span>
+          <span class="text-green-400 text-xs font-semibold">Live • Updates every 60 seconds</span>
+        </div>
+      </div>
+      <!-- About NIE -->
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Institution</h3>
+        <p class="text-white font-semibold text-base mb-1">The National Institute of Engineering</p>
+        <p class="text-slate-400 text-sm">Manandavadi Road, Mysuru — 570 008</p>
+        <p class="text-slate-400 text-sm mt-1">Karnataka, India</p>
+        <div class="mt-4 space-y-1 text-sm text-slate-400">
+          <p>🏛️ Est. 1946 · Autonomous Institution</p>
+          <p>📚 Affiliated to VTU, Belagavi</p>
+        </div>
+      </div>
+      <!-- Developers -->
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Built By</h3>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">T</div>
+            <div>
+              <p class="text-white font-semibold text-sm">Team AIML</p>
+              <p class="text-slate-400 text-xs">Developer · NIE AIML</p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 p-3 bg-slate-800 rounded-xl">
+          <p class="text-xs text-slate-400 mb-1">🚀 Launched</p>
+          <p class="text-white text-sm font-semibold">March 2026</p>
+          <p class="text-xs text-slate-500 mt-1">Built with Supabase · Vercel · Tailwind CSS</p>
+        </div>
+      </div>
+    </div>
+    <!-- Bottom bar -->
+    <div class="mt-10 pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
+      <p class="text-slate-500 text-xs">© 2026 NIE ClassPulse · The National Institute of Engineering, Mysuru</p>
+      <p class="text-slate-600 text-xs">Made with ❤️ for NIE students & faculty</p>
+    </div>
+  </div>
+</footer>
+</div>
+
+<!-- Founders Section -->
+<section id="founders-section" class="content-section hidden min-h-[80vh] flex flex-col bg-slate-50 dark:bg-transparent border-t-[12px] border-slate-200 dark:border-slate-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-16 flex-grow">
+    <div class="flex items-center gap-2 mb-8">
+      <span class="material-symbols-outlined text-primary text-3xl">groups</span>
+      <h2 class="text-2xl font-bold">Founders</h2>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Card 1 -->
+      <div class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-6 flex flex-col items-center text-center transition-transform hover:-translate-y-1.5 duration-300">
+        <div class="w-[100px] h-[100px] rounded-full bg-slate-200 dark:bg-slate-600 mb-4 shrink-0 shadow-inner"></div>
+        <h3 class="text-slate-900 dark:text-white text-xl font-bold mb-1">Tilak M K</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mb-5">4th Sem AIML B Section</p>
+        <div class="flex items-center gap-4 mt-auto">
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-github text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-linkedin text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fas fa-envelope text-lg"></i>
+          </a>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-6 flex flex-col items-center text-center transition-transform hover:-translate-y-1.5 duration-300">
+        <div class="w-[100px] h-[100px] rounded-full bg-slate-200 dark:bg-slate-600 mb-4 shrink-0 shadow-inner"></div>
+        <h3 class="text-slate-900 dark:text-white text-xl font-bold mb-1">Vinayaka J</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mb-5">4th Sem AIML B Section</p>
+        <div class="flex items-center gap-4 mt-auto">
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-github text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-linkedin text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fas fa-envelope text-lg"></i>
+          </a>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-6 flex flex-col items-center text-center transition-transform hover:-translate-y-1.5 duration-300">
+        <div class="w-[100px] h-[100px] rounded-full bg-slate-200 dark:bg-slate-600 mb-4 shrink-0 shadow-inner"></div>
+        <h3 class="text-slate-900 dark:text-white text-xl font-bold mb-1">Uday Kiran P S</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mb-5">4th Sem AIML B Section</p>
+        <div class="flex items-center gap-4 mt-auto">
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-github text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-linkedin text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fas fa-envelope text-lg"></i>
+          </a>
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-6 flex flex-col items-center text-center transition-transform hover:-translate-y-1.5 duration-300">
+        <div class="w-[100px] h-[100px] rounded-full bg-slate-200 dark:bg-slate-600 mb-4 shrink-0 shadow-inner"></div>
+        <h3 class="text-slate-900 dark:text-white text-xl font-bold mb-1">Vikas H B</h3>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mb-5">4th Sem AIML B Section</p>
+        <div class="flex items-center gap-4 mt-auto">
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-github text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fab fa-linkedin text-lg"></i>
+          </a>
+          <a href="#" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
+            <i class="fas fa-envelope text-lg"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    </div>
+    <!-- Footer for Founders Section -->
+    <footer class="bg-slate-900 dark:bg-black text-white pb-20 md:pb-0 w-full">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <!-- Brand -->
+          <div>
+            <div class="flex items-center gap-3 mb-4">
+              <img src="/logo.png" alt="NIE ClassPulse" class="h-12 w-12 rounded-xl object-cover" onerror="this.style.display='none'"/>
+              <div class="bg-primary p-2 rounded-xl" style="display:none">
+                <span class="material-symbols-outlined text-white text-2xl">pulse_alert</span>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold">NIE ClassPulse</h2>
+                <p class="text-xs text-slate-400">Live Classroom Tracker</p>
+              </div>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Real-time classroom availability tracker for The National Institute of Engineering, Mysuru.
+              Know which room is free before you walk there.
+            </p>
+            <div class="mt-4 flex items-center gap-2">
+              <span class="pulse-dot"></span>
+              <span class="text-green-400 text-xs font-semibold">Live • Updates every 60 seconds</span>
+            </div>
+          </div>
+          <!-- About NIE -->
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Institution</h3>
+            <p class="text-white font-semibold text-base mb-1">The National Institute of Engineering</p>
+            <p class="text-slate-400 text-sm">Manandavadi Road, Mysuru — 570 008</p>
+            <p class="text-slate-400 text-sm mt-1">Karnataka, India</p>
+            <div class="mt-4 space-y-1 text-sm text-slate-400">
+              <p>🏛️ Est. 1946 · Autonomous Institution</p>
+              <p>📚 Affiliated to VTU, Belagavi</p>
+            </div>
+          </div>
+          <!-- Developers -->
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Built By</h3>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">T</div>
+                <div>
+                  <p class="text-white font-semibold text-sm">Team AIML</p>
+                  <p class="text-slate-400 text-xs">Developer · NIE AIML</p>
+                </div>
+              </div>
+            </div>
+            <div class="mt-5 p-3 bg-slate-800 rounded-xl">
+              <p class="text-xs text-slate-400 mb-1">🚀 Launched</p>
+              <p class="text-white text-sm font-semibold">March 2026</p>
+              <p class="text-xs text-slate-500 mt-1">Built with Supabase · Vercel · Tailwind CSS</p>
+            </div>
+          </div>
+        </div>
+        <!-- Bottom bar -->
+        <div class="mt-10 pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
+          <p class="text-slate-500 text-xs">© 2026 NIE ClassPulse · The National Institute of Engineering, Mysuru</p>
+          <p class="text-slate-600 text-xs">Made with ❤️ for NIE students & faculty</p>
+        </div>
+      </div>
+    </footer>
+  </section>
+
+  <!-- About Section -->
+  <section id="about-section" class="content-section hidden min-h-[80vh] flex flex-col bg-white dark:bg-transparent border-t border-slate-200 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-16 flex-grow">
+    <div class="flex items-center gap-2 mb-8">
+      <span class="material-symbols-outlined text-primary text-3xl">info</span>
+      <h2 class="text-2xl font-bold">About</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Vision Card -->
+      <div class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-8 hover:-translate-y-1 transition-transform duration-300">
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-3">
+          <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">visibility</span>
+          Our <span class="text-purple-600 dark:text-purple-400">Vision</span>
+        </h3>
+        <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
+          To become the most reliable real-time classroom management system for engineering institutions, empowering students and faculty with instant room availability data.
+        </p>
+      </div>
+      <!-- Mission Card -->
+      <div class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-8 hover:-translate-y-1 transition-transform duration-300">
+        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary">rocket_launch</span>
+          Our <span class="text-primary">Mission</span>
+        </h3>
+        <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
+          To simplify campus life by providing live classroom tracking, lab scheduling, and room reservation — all in one clean, accessible platform built for NIE students.
+        </p>
+      </div>
+    </div>
+    </div>
+
+<!-- Footer for About Section -->
 <footer class="bg-slate-900 dark:bg-black text-white mt-16 pb-20 md:pb-0">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -254,6 +598,7 @@
     </div>
   </div>
 </footer>
+</section>
 
 <!-- Mobile Nav -->
 <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 md:hidden z-50"
@@ -277,6 +622,16 @@
       <span class="material-symbols-outlined">person</span>
       <span class="text-[10px] font-medium">Login</span>
     </a>
+    <!-- Founders: hidden when logged in -->
+    <a id="mob-founders" onclick="showSection('founders')" class="flex flex-col items-center gap-1 text-slate-400 cursor-pointer">
+      <span class="material-symbols-outlined">groups</span>
+      <span class="text-[10px] font-medium">Founders</span>
+    </a>
+    <!-- About: hidden when logged in -->
+    <a id="mob-about" onclick="showSection('about')" class="flex flex-col items-center gap-1 text-slate-400 cursor-pointer">
+      <span class="material-symbols-outlined">info</span>
+      <span class="text-[10px] font-medium">About</span>
+    </a>
     <!-- My Page: shown when logged in -->
     <a id="mob-dashboard" class="flex flex-col items-center gap-1 text-primary" href="/pages/user-dashboard.html" style="display:none">
       <span class="material-symbols-outlined">person</span>
@@ -288,6 +643,7 @@
 <script>
 function toggleTheme() {
   const isDark = document.documentElement.classList.toggle('dark');
+  const isLight = document.body.classList.toggle('light-mode');
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
   const icon = isDark ? 'light_mode' : 'dark_mode';
   ['theme-icon','theme-icon-mobile'].forEach(id => {
@@ -295,6 +651,35 @@ function toggleTheme() {
     if (el) el.textContent = icon;
   });
 }
+
+function showSection(sectionId) {
+  // Hide all sections
+  document.querySelectorAll('.content-section').forEach(section => {
+    section.classList.add('hidden');
+  });
+  
+  // Show target section
+  const target = document.getElementById(sectionId + '-section');
+  if (target) {
+    target.classList.remove('hidden');
+  }
+
+  // Update navbar links
+  document.querySelectorAll('.nav-link').forEach(link => {
+    // Reset to inactive styles
+    link.className = "nav-link flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-primary px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 hover:border-primary transition-colors";
+  });
+
+  // Set active link style
+  const activeLink = document.getElementById('nav-' + sectionId);
+  if (activeLink) {
+    activeLink.className = "nav-link flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold border transition-all active-nav bg-primary text-white border-primary";
+  }
+
+  // Scroll to top
+  window.scrollTo(0, 0);
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   const isDark = document.documentElement.classList.contains('dark');
   const icon = isDark ? 'light_mode' : 'dark_mode';
@@ -304,6 +689,12 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+<script src="/js/chaos-bg.js?v=6.0"></script>
 <script type="module" src="/js/dashboard.js"></script>
+<script>
+document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    document.body.classList.toggle('light-mode');
+});
+</script>
 </body>
 </html>

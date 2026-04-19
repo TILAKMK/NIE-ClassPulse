@@ -30,10 +30,59 @@
       color: #f1f5f9;
       border-color: #475569;
     }
+    body {
+        background: url('placidplace-brain-24669.gif') no-repeat center center fixed !important;
+        background-size: cover !important;
+        color: #e5e7eb;
+        transition: all 0.3s ease;
+    }
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.75);
+        z-index: 0;
+        pointer-events: none;
+        transition: background 0.3s ease;
+    }
+    body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at 60% 40%, rgba(59,130,246,0.2), transparent 50%);
+        filter: blur(80px);
+        z-index: 0;
+        pointer-events: none;
+    }
+    .vignette {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.9));
+        z-index: 1;
+        pointer-events: none;
+    }
+    header, nav, .container, .card {
+        position: relative !important;
+        z-index: 10 !important;
+    }
+    body.light-mode {
+        color: #111;
+    }
+    body.light-mode::before {
+        background: rgba(255, 255, 255, 0.6);
+    }
+    body.light-mode::after,
+    body.light-mode .vignette {
+        display: none;
+    }
+    body.light-mode .card {
+        background: rgba(255, 255, 255, 0.9) !important;
+        color: #111 !important;
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
-
+<div class="vignette"></div>
 <!-- Header -->
 <header class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
   <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -407,6 +456,12 @@
       }
     });
   }
+</script>
+<script src="/js/chaos-bg.js?v=6.0"></script>
+<script>
+document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    document.body.classList.toggle('light-mode');
+});
 </script>
 </body>
 </html>
