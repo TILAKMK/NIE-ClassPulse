@@ -120,6 +120,32 @@
     body.light-mode .pulse-dot {
       border: 1px solid #16a34a;
     }
+    /* Mobile Menu Styles */
+    #mobile-menu {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      visibility: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #mobile-menu.open {
+      max-height: 500px;
+      opacity: 1;
+      visibility: visible;
+    }
+    .mobile-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      color: white !important;
+      transition: all 0.2s;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      text-decoration: none;
+    }
+    .mobile-nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen transition-colors">
@@ -183,7 +209,43 @@
         <a href="/pages/login.html" class="mob-header-person size-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
           <span class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">person</span>
         </a>
+        <!-- Hamburger Menu Button -->
+        <button id="mobile-menu-btn" onclick="toggleMobileMenu()"
+                class="size-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          <span id="menu-icon" class="material-symbols-outlined">menu</span>
+        </button>
       </div>
+    </div>
+  </div>
+  
+  <!-- Mobile Dropdown Menu -->
+  <div id="mobile-menu" class="md:hidden w-full bg-[#0f172a] absolute top-full left-0 z-40 border-b border-white/10">
+    <div class="flex flex-col py-2">
+      <a href="javascript:void(0)" onclick="showSection('home'); toggleMobileMenu()" class="mobile-nav-link">
+        <span class="material-symbols-outlined text-primary">home</span>
+        <span class="font-medium">Home</span>
+      </a>
+      <a href="/pages/labs.html" onclick="toggleMobileMenu()" class="mobile-nav-link">
+        <span class="material-symbols-outlined text-purple-400">science</span>
+        <span class="font-medium">Lab Schedule</span>
+      </a>
+      <a href="/pages/reserved.html" onclick="toggleMobileMenu()" class="mobile-nav-link">
+        <span class="material-symbols-outlined text-slate-400">event_available</span>
+        <span class="font-medium">Reserved Classes</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showSection('founders'); toggleMobileMenu()" class="mobile-nav-link">
+        <span class="material-symbols-outlined text-slate-400">groups</span>
+        <span class="font-medium">Founders</span>
+      </a>
+      <a href="javascript:void(0)" onclick="showSection('about'); toggleMobileMenu()" class="mobile-nav-link">
+        <span class="material-symbols-outlined text-slate-400">info</span>
+        <span class="font-medium">About</span>
+      </a>
+      <div class="h-px bg-white/10 my-2"></div>
+      <a href="/pages/login.html" onclick="toggleMobileMenu()" class="mobile-nav-link text-primary font-bold">
+        <span class="material-symbols-outlined">login</span>
+        <span>Login / Sign In</span>
+      </a>
     </div>
   </div>
 </header>
@@ -678,6 +740,16 @@ function showSection(sectionId) {
 
   // Scroll to top
   window.scrollTo(0, 0);
+}
+
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  const icon = document.getElementById('menu-icon');
+  const isOpen = menu.classList.toggle('open');
+  
+  if (icon) {
+    icon.textContent = isOpen ? 'close' : 'menu';
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
