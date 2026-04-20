@@ -189,6 +189,35 @@
       border: 1px solid #16a34a;
     }
 
+    /* Light mode text color fixes */
+    body.light-mode .text-slate-400 { color: #64748b !important; }
+    body.light-mode .text-slate-500 { color: #475569 !important; }
+    body.light-mode .text-slate-300 { color: #374151 !important; }
+    body.light-mode .text-white { color: #1e293b !important; }
+    body.light-mode .dark\:text-white { color: #1e293b !important; }
+    body.light-mode .dark\:text-slate-300 { color: #374151 !important; }
+    body.light-mode .dark\:text-slate-400 { color: #64748b !important; }
+
+    /* Footer text visibility (ensures dark mode contrast) */
+    footer * {
+      color: #ffffff !important;
+    }
+    footer .text-slate-400,
+    footer p.text-slate-400,
+    footer span.text-slate-400 {
+      color: #cbd5e1 !important; /* Lighter shade for better visibility */
+    }
+    footer .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    footer .text-slate-600 {
+      color: #64748b !important;
+    }
+    /* Ensure specific headers and names are pure white */
+    footer h2, footer h3, footer p.text-white, footer span.text-white {
+      color: #ffffff !important;
+    }
+
     /* Mobile Menu Styles */
     header>.max-w-7xl {
       position: relative;
@@ -264,7 +293,7 @@
       <div class="flex items-center justify-between h-16">
         <div class="flex items-center gap-3">
           <img src="/logo.png" alt="NIE ClassPulse" class="h-10 w-10 rounded-xl object-cover"
-            onerror="this.style.display='none';document.getElementById('nav-logo-fallback').style.display='flex'" />
+            onerror="this.style.display='none'; document.getElementById('nav-logo-fallback').style.display='flex'" />
           <div id="nav-logo-fallback" style="display:none" class="bg-primary p-1.5 rounded-lg text-white">
             <span class="material-symbols-outlined block">pulse_alert</span>
           </div>
@@ -509,7 +538,7 @@
             <!-- About NIE -->
             <div>
               <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Institution</h3>
-              <p class="text-white font-semibold text-base mb-1">The National Institute of Engineering</p>
+              <p class="text-white font-semibold text-base mb-1" style="color: #ffffff !important">The National Institute of Engineering</p>
               <p class="text-slate-400 text-sm">Manandavadi Road, Mysuru — 570 008</p>
               <p class="text-slate-400 text-sm mt-1">Karnataka, India</p>
               <div class="mt-4 space-y-1 text-sm text-slate-400">
@@ -526,14 +555,14 @@
                     class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
                     T</div>
                   <div>
-                    <p class="text-white font-semibold text-sm">Team AIML</p>
+                    <p class="text-white font-semibold text-sm" style="color: #ffffff !important">Team AIML</p>
                     <p class="text-slate-400 text-xs">Developer · NIE AIML</p>
                   </div>
                 </div>
               </div>
               <div class="mt-5 p-3 bg-slate-800 rounded-xl">
                 <p class="text-xs text-slate-400 mb-1">🚀 Launched</p>
-                <p class="text-white text-sm font-semibold">March 2026</p>
+                <p class="text-white text-sm font-semibold" style="color: #ffffff !important">March 2026</p>
                 <p class="text-xs text-slate-500 mt-1">Built with Supabase · Vercel · Tailwind CSS</p>
               </div>
             </div>
@@ -675,7 +704,7 @@
             <!-- About NIE -->
             <div>
               <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Institution</h3>
-              <p class="text-white font-semibold text-base mb-1">The National Institute of Engineering</p>
+              <p class="text-white font-semibold text-base mb-1" style="color: #ffffff !important">The National Institute of Engineering</p>
               <p class="text-slate-400 text-sm">Manandavadi Road, Mysuru — 570 008</p>
               <p class="text-slate-400 text-sm mt-1">Karnataka, India</p>
               <div class="mt-4 space-y-1 text-sm text-slate-400">
@@ -692,14 +721,14 @@
                     class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
                     T</div>
                   <div>
-                    <p class="text-white font-semibold text-sm">Team AIML</p>
+                    <p class="text-white font-semibold text-sm" style="color: #ffffff !important">Team AIML</p>
                     <p class="text-slate-400 text-xs">Developer · NIE AIML</p>
                   </div>
                 </div>
               </div>
               <div class="mt-5 p-3 bg-slate-800 rounded-xl">
                 <p class="text-xs text-slate-400 mb-1">🚀 Launched</p>
-                <p class="text-white text-sm font-semibold">March 2026</p>
+                <p class="text-white text-sm font-semibold" style="color: #ffffff !important">March 2026</p>
                 <p class="text-xs text-slate-500 mt-1">Built with Supabase · Vercel · Tailwind CSS</p>
               </div>
             </div>
@@ -717,34 +746,43 @@
     <!-- About Section -->
     <section id="about-section"
       class="content-section hidden min-h-[80vh] flex flex-col bg-white dark:bg-transparent border-t border-slate-200 dark:border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-16 flex-grow">
-        <div class="flex items-center gap-2 mb-8">
-          <span class="material-symbols-outlined text-primary text-3xl">info</span>
-          <h2 class="text-2xl font-bold">About</h2>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-20 flex-grow">
+        
+        <!-- Label & Heading -->
+        <div class="mb-12">
+          <span class="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest mb-4">
+            About the Platform
+          </span>
+          <h2 class="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white leading-[1.1] mb-6 uppercase">
+            LIVE CLASSROOMS.<br/>
+            <span class="text-[#137fec]">SMARTER CAMPUS.</span>
+          </h2>
+          <p class="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
+            NIE ClassPulse gives every student real-time classroom availability at their fingertips — no more guessing, no more wasted trips across campus.
+          </p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Vision Card -->
-          <div
-            class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-8 hover:-translate-y-1 transition-transform duration-300">
-            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-3">
-              <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">visibility</span>
-              Our <span class="text-purple-600 dark:text-purple-400">Vision</span>
+          <div class="card bg-white dark:bg-slate-900/50 border-l-4 border-primary rounded-xl p-8 hover:-translate-y-1 transition-all duration-300 shadow-sm">
+            <span class="material-symbols-outlined text-primary text-4xl mb-4">visibility</span>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-4 tracking-tight uppercase">
+              Our Vision
             </h3>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
-              To become the most reliable real-time classroom management system for engineering institutions, empowering
-              students and faculty with instant room availability data.
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-lg">
+              To build the most intelligent real-time classroom tracking system for engineering campuses — 
+              giving every student instant access to room availability, lab schedules, and space intelligence.
             </p>
           </div>
           <!-- Mission Card -->
-          <div
-            class="card bg-white dark:bg-[#1e293b] rounded-xl border border-slate-200 dark:border-slate-700/50 p-8 hover:-translate-y-1 transition-transform duration-300">
-            <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-3">
-              <span class="material-symbols-outlined text-primary">rocket_launch</span>
-              Our <span class="text-primary">Mission</span>
+          <div class="card bg-white dark:bg-slate-900/50 border-l-4 border-purple-500 rounded-xl p-8 hover:-translate-y-1 transition-all duration-300 shadow-sm">
+            <span class="material-symbols-outlined text-purple-500 text-4xl mb-4">rocket_launch</span>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-4 tracking-tight uppercase">
+              Our Mission
             </h3>
-            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
-              To simplify campus life by providing live classroom tracking, lab scheduling, and room reservation — all
-              in one clean, accessible platform built for NIE students.
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed text-lg">
+              To eliminate classroom confusion on campus by delivering a fast, live, and student-first 
+              platform that makes every second count inside NIE.
             </p>
           </div>
         </div>
@@ -781,7 +819,7 @@
             <!-- About NIE -->
             <div>
               <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4">Institution</h3>
-              <p class="text-white font-semibold text-base mb-1">The National Institute of Engineering</p>
+              <p class="text-white font-semibold text-base mb-1" style="color: #ffffff !important">The National Institute of Engineering</p>
               <p class="text-slate-400 text-sm">Manandavadi Road, Mysuru — 570 008</p>
               <p class="text-slate-400 text-sm mt-1">Karnataka, India</p>
               <div class="mt-4 space-y-1 text-sm text-slate-400">
@@ -799,14 +837,14 @@
                     class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
                     T</div>
                   <div>
-                    <p class="text-white font-semibold text-sm">Team AIML</p>
+                    <p class="text-white font-semibold text-sm" style="color: #ffffff !important">Team AIML</p>
                     <p class="text-slate-400 text-xs">Developer · NIE AIML</p>
                   </div>
                 </div>
               </div>
               <div class="mt-5 p-3 bg-slate-800 rounded-xl">
                 <p class="text-xs text-slate-400 mb-1">🚀 Launched</p>
-                <p class="text-white text-sm font-semibold">March 2026</p>
+                <p class="text-white text-sm font-semibold" style="color: #ffffff !important">March 2026</p>
                 <p class="text-xs text-slate-500 mt-1">Built with Supabase · Vercel · Tailwind CSS</p>
               </div>
             </div>
