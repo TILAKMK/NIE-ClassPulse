@@ -114,14 +114,19 @@
       border: 1px solid #16a34a;
     }
     /* Mobile Menu Styles */
+    header > .max-w-7xl {
+      position: relative;
+      z-index: 100000;
+    }
     #mobile-menu {
       position: fixed !important;
-      top: 70px !important;
+      top: 0 !important;
       left: 0 !important;
-      width: 100% !important;
-      background-color: #0f172a !important;
-      z-index: 9999 !important;
-      height: auto;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: #0f172a !important;
+      z-index: 99999 !important;
+      padding-top: 70px !important;
       border-top: 1px solid rgba(255,255,255,0.1);
       max-height: 0;
       opacity: 0;
@@ -133,8 +138,8 @@
       max-height: 100vh;
       opacity: 1 !important;
       visibility: visible;
-      background-color: #0f172a !important;
-      z-index: 9999 !important;
+      background: #0f172a !important;
+      z-index: 99999 !important;
     }
     .active-nav {
       background-color: rgba(19, 127, 236, 0.1) !important;
@@ -260,6 +265,7 @@
   </div>
 </header>
 
+<div id="main-content-wrapper">
 <div id="home-section" class="content-section">
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24">
 
@@ -710,6 +716,7 @@
     </a>
   </div>
 </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -770,6 +777,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.toggleMobileMenu = function() {
     const menu = document.getElementById('mobile-menu');
     const icon = document.getElementById('menu-icon');
+    const wrapper = document.getElementById('main-content-wrapper');
     if (!menu) return;
     const isOpen = menu.classList.toggle('open');
     
@@ -780,14 +788,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add or remove overflow: hidden from body
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      if (wrapper) wrapper.style.display = 'none';
     } else {
       document.body.style.overflow = '';
+      if (wrapper) wrapper.style.display = '';
     }
   };
 
   window.closeMobileMenu = function() {
     const menu = document.getElementById('mobile-menu');
     const icon = document.getElementById('menu-icon');
+    const wrapper = document.getElementById('main-content-wrapper');
     if (!menu) return;
     
     menu.classList.remove('open');
@@ -795,6 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
       icon.textContent = 'menu';
     }
     document.body.style.overflow = '';
+    if (wrapper) wrapper.style.display = '';
   };
 
   // Initial theme icon sync
