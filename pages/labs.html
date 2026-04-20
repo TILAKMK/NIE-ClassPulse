@@ -2849,47 +2849,21 @@ function renderLabs() {
       const firstLab = slotEntries[0];
       const isNow = isToday && now >= firstLab.start && now < firstLab.end;
 
-      // If multiple different labs at same time — show as one grouped card
-      if (slotEntries.length > 1) {
-        html += `
-          <div class="col-span-full bg-white dark:bg-slate-900 rounded-2xl border ${isNow ? 'border-primary now-glow' : 'border-slate-200 dark:border-slate-800'} overflow-hidden transition-all">
-            <div class="h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-            <div class="p-5">
-              ${isNow ? `<div class="flex items-center gap-1.5 mb-3">
-                <span class="w-2 h-2 rounded-full bg-primary animate-pulse inline-block"></span>
-                <span class="text-xs font-bold text-primary uppercase tracking-wide">Happening Now</span>
-              </div>` : ''}
-              <div class="flex items-center gap-2 mb-4">
-                <span class="material-symbols-outlined text-slate-400 text-sm">schedule</span>
-                <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${fmtTime(firstLab.start)} – ${fmtTime(firstLab.end)}</span>
-                <span class="text-xs text-slate-400">· ${semLabel(firstLab.semester)} ${firstLab.dept} Sec-${firstLab.section}</span>
-                <span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold ml-auto">Batches split across labs</span>
-              </div>
-              <div class="space-y-2">
-                ${slotEntries.map(lab => {
-                  const s = getLabStyle(lab.lab_name);
-                  return `<div class="flex items-center gap-3 p-3 rounded-xl ${s.light}">
-                    <div class="size-9 rounded-lg bg-white/60 dark:bg-slate-900/40 flex items-center justify-center shrink-0">
-                      <span class="material-symbols-outlined ${s.text} text-lg">${s.icon}</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="font-bold text-sm text-slate-900 dark:text-white">${lab.lab_name}</p>
-                      <p class="text-xs ${s.text} font-semibold">Batch: ${parseBatch(lab.batch).batchNum}</p>
-                      ${lab.instructors ? `<p class="text-xs text-slate-500 dark:text-slate-400">👨‍🏫 ${lab.instructors}</p>` : ''}
-                    </div>
-                    <div class="flex items-center gap-1 shrink-0">
-                      <span class="material-symbols-outlined text-primary text-sm">location_on</span>
-                      <span class="text-xs font-bold text-primary">${lab.lab_room || 'TBD'}</span>
-                    </div>
-                  </div>`;
-                }).join('')}
-              </div>
-            </div>
-          </div>`;
-      } else {
-        // Single entry — show as individual card
-        const lab = slotEntries[0];
+      // Add time slot heading
+      html += `
+        <div class="col-span-full mt-4 mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-slate-400 text-sm">schedule</span>
+          <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${fmtTime(firstLab.start)} – ${fmtTime(firstLab.end)}</span>
+          <span class="text-xs text-slate-400">· ${semLabel(firstLab.semester)} ${firstLab.dept} Sec-${firstLab.section}</span>
+        </div>
+      `;
+
+      // Render each lab as an individual card WITHOUT grouping
+      for (const lab of slotEntries) {
+        // ALWAYS evaluate isNow independently for this specific lab
+        const isNow = isToday && now >= lab.start && now < lab.end;
         const style = getLabStyle(lab.lab_name);
+        
         html += `
           <div class="bg-white dark:bg-slate-900 rounded-2xl border ${isNow ? 'border-primary now-glow' : 'border-slate-200 dark:border-slate-800'} overflow-hidden transition-all">
             <div class="h-1.5 ${style.bg}"></div>
@@ -2913,7 +2887,7 @@ function renderLabs() {
                     <span class="material-symbols-outlined text-slate-400 text-sm">groups</span>
                     <span class="text-sm font-bold">${lab.dept} - Sec ${lab.section}</span>
                   </div>
-  <div class="text-right">
+                  <div class="text-right">
                     <span class="text-xs font-semibold px-2 py-0.5 rounded-lg ${style.light} ${style.text} block">Batch ${parseBatch(lab.batch).batchNum}</span>
                     ${lab.instructors ? `<span class="text-xs text-slate-400 mt-0.5 block">👨‍🏫 ${lab.instructors}</span>` : ''}
                   </div>
