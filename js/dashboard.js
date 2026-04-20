@@ -2,6 +2,7 @@
 //  js/dashboard.js  —  Fixed: realtime, floor tabs, staff label
 // ============================================================
 import { getAllRooms, getRoomStats, subscribeToRoomChanges } from './rooms.js';
+import { initScheduler }                                    from './scheduler.js';
 import { getUser, getDisplayEmail, logout }                  from './auth.js';
 
 const grid           = document.getElementById('room-grid');
@@ -41,6 +42,7 @@ async function init() {
   await loadStats(true);
   bindEvents();
   listenRealtime();
+  initScheduler(); // Start automatic timetable sync
 }
 
 async function loadUser() {

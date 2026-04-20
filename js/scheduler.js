@@ -2,13 +2,11 @@
 //  js/scheduler.js — FINAL FIXED VERSION
 //
 //  Rules:
-//  1. If room has session_end AND current IST time < session_end
-//     → SKIP (manual override active, don't touch)
-//  2. If session_end has passed OR no session_end
-//     → Apply timetable (occupied/vacant based on schedule)
-//  3. Weekends/off hours → same rules apply
-//     → Manual locked rooms stay as is
-//     → Everything else → vacant
+//  1. If room.manual_override is true AND current time < manual_override_until
+//     → SKIP (staff lock is active)
+//  2. If override is expired OR false
+//     → Apply timetable logic (scheduler controls status)
+//  3. Manual Vacate resets override immediately via rooms.js
 // ============================================================
 import { supabase } from './supabase.js';
 
@@ -37,17 +35,14 @@ function getIST() {
   return { time: `${hh}:${mm}`, day };
 }
 
-// THE KEY FUNCTION — is this room manually locked?
-// A room is locked if:
-// - status is 'occupied'
-// - session_end exists
-// - current IST time is BEFORE session_end
-function isManuallyLocked(room, currentTime) {
-  if (room.status !== 'occupied') return false;
-  if (!room.session_end)          return false;
-  const end = String(room.session_end).substring(0, 5); // "HH:MM:SS" → "HH:MM"
-  if (!end || end.length < 5)     return false;
-  return currentTime < end;
+// THE KEY FUNCTION — is this room manually locked by staff?
+function isManuallyLocked(room) {
+  if (!room.manual_override) return false;
+  if (!room.manual_override_until) return false;
+
+  const now = new Date().toISOString();
+  // If current time is strictly BEFORE the override end time, it is locked
+  return now < room.manual_override_until;
 }
 
 async function syncRoomStatuses() {
@@ -57,16 +52,31 @@ async function syncRoomStatuses() {
   // Step 1 — fetch all rooms
   const { data: allRooms, error: roomErr } = await supabase
     .from('classrooms')
-    .select('id, status, session_end');
+    .select('id, status, session_end, manual_override, manual_override_until');
 
   if (roomErr || !allRooms) {
     console.error('[Scheduler] Room fetch failed:', roomErr?.message);
     return;
   }
 
-  // Step 2 — split into locked (skip) and unlocked (scheduler controls)
-  const locked   = allRooms.filter(r => isManuallyLocked(r, time));
-  const unlocked = allRooms.filter(r => !isManuallyLocked(r, time));
+  // Step 2 — Handle Manual Overrides
+  const unlocked = [];
+  const locked   = [];
+
+  for (const room of allRooms) {
+    if (isManuallyLocked(room)) {
+      locked.push(room);
+    } else {
+      // If it WAS manually overridden but is now expired, reset it in DB
+      if (room.manual_override) {
+        console.log(`[Scheduler] Override expired for ${room.id} — resetting flag`);
+        await supabase.from('classrooms')
+          .update({ manual_override: false, manual_override_until: null })
+          .eq('id', room.id);
+      }
+      unlocked.push(room);
+    }
+  }
 
   console.log(`[Scheduler] Locked: ${locked.length} | Unlocked: ${unlocked.length}`);
 
