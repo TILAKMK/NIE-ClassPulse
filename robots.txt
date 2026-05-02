@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Allow: /pages/
+
+Sitemap: https://nieclasspulse.vercel.app/sitemap.xml
+
+# Crawl delay (optional, prevents server overload)
+Crawl-delay: 2
