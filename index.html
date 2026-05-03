@@ -68,6 +68,10 @@
   }
   </script>
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    
     body {
       min-height: 100dvh;
     }
@@ -412,7 +416,7 @@
           <span class="material-symbols-outlined">info</span>
           <span>About</span>
         </a>
-        <a href="javascript:void(0)" onclick="showSection('contact'); closeMobileMenu()" class="mobile-nav-link">
+        <a href="#contact" onclick="closeMobileMenu()" class="mobile-nav-link">
           <span class="material-symbols-outlined">mail</span>
           <span>Contact</span>
         </a>
@@ -901,7 +905,7 @@
     </section>
 
     <!-- Contact Section -->
-    <section id="contact-section"
+    <section id="contact"
       class="content-section hidden min-h-[80vh] flex flex-col bg-white dark:bg-transparent border-t border-slate-200 dark:border-slate-800">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-20 flex-grow">
         
@@ -911,8 +915,8 @@
             Get In Touch
           </span>
           <h2 class="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white leading-[1.1] mb-6 uppercase">
-            Let's Build<br/>
-            <span class="text-[#137fec]">Something Together.</span>
+            Not Just a Tool.<br/>
+            <span class="text-[#137fec]">A New Standard for Classrooms.</span>
           </h2>
           <p class="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
             Have questions about ClassPulse? Want to collaborate? Reach out and let's connect.
@@ -928,7 +932,7 @@
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Email</h3>
                 <p class="text-slate-600 dark:text-slate-400">
                   <a href="mailto:contact@nieclasspulse.com" class="hover:text-primary transition-colors">
-                    contact@nieclasspulse.com
+                    contact@=nieclasspulse@gmai.com
                   </a>
                 </p>
               </div>
@@ -938,19 +942,6 @@
                   The National Institute of Engineering<br/>
                   Mysuru, Karnataka, India
                 </p>
-              </div>
-              <div>
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Connect</h3>
-                <div class="flex items-center gap-3">
-                  <a href="https://github.com/TILAKMK/NIE-ClassPulse" target="_blank"
-                    class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
-                    <i class="fab fa-github text-lg"></i>
-                  </a>
-                  <a href="#"
-                    class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white hover:bg-primary hover:text-white dark:hover:shadow-[0_0_15px_rgba(19,127,236,0.5)] transition-all">
-                    <i class="fab fa-linkedin text-lg"></i>
-                  </a>
-                </div>
               </div>
             </div>
           </div>
@@ -1110,11 +1101,6 @@
           <span class="material-symbols-outlined">info</span>
           <span class="text-[10px] font-medium">About</span>
         </a>
-        <a id="mob-contact" onclick="showSection('contact')"
-          class="flex flex-col items-center gap-1 text-slate-400 cursor-pointer">
-          <span class="material-symbols-outlined">mail</span>
-          <span class="text-[10px] font-medium">Contact</span>
-        </a>
         <!-- My Page: shown when logged in -->
         <a id="mob-dashboard" class="flex flex-col items-center gap-1 text-primary" href="/pages/user-dashboard.html"
           style="display:none">
@@ -1151,8 +1137,11 @@
           section.classList.add('hidden');
         });
 
-        // Show target section
-        const target = document.getElementById(sectionId + '-section');
+        // Show target section - try both patterns: 'sectionId-section' and just 'sectionId'
+        let target = document.getElementById(sectionId + '-section');
+        if (!target) {
+          target = document.getElementById(sectionId);
+        }
         if (target) {
           target.classList.remove('hidden');
         }
