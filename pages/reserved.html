@@ -129,13 +129,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
   async function loadBookings(user) {
     try {
-      // Get current time in IST (India Standard Time)
+      // Get current date/time strings properly in IST using Intl formatter to avoid any browser clock diffs
       const now = new Date();
-      const utcMs = now.getTime();
-      const istMs = utcMs + (5.5 * 60 * 60 * 1000);
-      const istTime = new Date(istMs);
-      const todayStr = `${String(istTime.getUTCFullYear()).padStart(4, '0')}-${String(istTime.getUTCMonth() + 1).padStart(2, '0')}-${String(istTime.getUTCDate()).padStart(2, '0')}`;
-      const nowTimeStr = `${String(istTime.getUTCHours()).padStart(2, '0')}:${String(istTime.getUTCMinutes()).padStart(2, '0')}`;
+      const ptDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+      const ptTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(now);
+      
+      const yr = ptDate.find(p => p.type === 'year').value;
+      const mo = ptDate.find(p => p.type === 'month').value;
+      const da = ptDate.find(p => p.type === 'day').value;
+      const todayStr = `${yr}-${mo}-${da}`;
+      
+      const hr = ptTime.find(p => p.type === 'hour').value;
+      const mn = ptTime.find(p => p.type === 'minute').value;
+      const nowTimeStr = `${hr}:${mn}`;
+      
       console.log('[reserved] Today IST:', todayStr, 'Now time IST:', nowTimeStr);
 
       const { data, error } = await supabase

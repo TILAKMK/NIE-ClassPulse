@@ -215,10 +215,18 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function init(user) {
-    // Set default date to today
-    const todayIST = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000));
-    const todayStr = todayIST.toISOString().split('T')[0];
-    const maxDate  = new Date(todayIST.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Use Intl formatter to ensure exact IST dates regardless of browser configuration
+    const now = new Date();
+    const ptDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+    const yr = ptDate.find(p => p.type === 'year').value;
+    const mo = ptDate.find(p => p.type === 'month').value;
+    const da = ptDate.find(p => p.type === 'day').value;
+    const todayStr = `${yr}-${mo}-${da}`;
+    
+    // Add 2 days for max date
+    const later = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+    const ptMax = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(later);
+    const maxDate = `${ptMax.find(p=>p.type==='year').value}-${ptMax.find(p=>p.type==='month').value}-${ptMax.find(p=>p.type==='day').value}`;
 
     const dateInput = document.getElementById('inp-date');
     dateInput.value = todayStr;
