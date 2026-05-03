@@ -144,7 +144,10 @@ export function subscribeToRoomChanges(callback) {
 
 // ──────────────────────────────────────────────────────
 // Utility: Calculate actual room status based on current time
-// Returns: 'VACANT' | 'OCCUPIED' | 'RESERVED'
+// Returns: 'VACANT' | 'OCCUPIED'
+// Logic:
+//   - OCCUPIED if current time is within ANY session (timetable or reservation)
+//   - VACANT otherwise (future or past bookings don't affect current status)
 // ──────────────────────────────────────────────────────
 export function getActualRoomStatus(room) {
   // If no session times, return database status
@@ -163,12 +166,10 @@ export function getActualRoomStatus(room) {
   const startTimeStr = room.session_start.substring(0, 5);
   const endTimeStr = room.session_end.substring(0, 5);
 
-  // Compare as strings (HH:MM format)
-  if (currentTimeStr < startTimeStr) {
-    return 'RESERVED';  // Class hasn't started yet
-  } else if (currentTimeStr < endTimeStr) {
-    return 'OCCUPIED';  // Class is ongoing
-  } else {
-    return 'VACANT';    // Class has ended
+  // Check if current time falls within the session (timetable or reservation)
+  if (currentTimeStr >= startTimeStr && currentTimeStr < endTimeStr) {
+    return 'OCCUPIED';
   }
+  
+  return 'VACANT';
 }
