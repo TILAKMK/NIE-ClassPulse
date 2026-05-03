@@ -317,89 +317,148 @@
       color: #ffffff !important;
     }
 
-    /* Enhanced Dropdown Styling */
-    select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23137fec' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      background-size: 12px;
-      padding-right: 32px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Custom Dropdown Styles */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
     }
 
-    /* Default select styling */
-    select[id="filter-building"],
-    select[id="filter-status"] {
+    .dropdown-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 10px 14px;
       background-color: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(100, 116, 139, 0.3);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       color: #e2e8f0;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
-    /* Light mode select */
-    body.light-mode select[id="filter-building"],
-    body.light-mode select[id="filter-status"] {
-      background-color: rgba(241, 245, 249, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(226, 232, 240, 0.5);
-      color: #1e293b;
-    }
-
-    /* Focus state */
-    select[id="filter-building"]:focus,
-    select[id="filter-status"]:focus {
-      outline: none;
-      border-color: #137fec;
-      box-shadow: 0 0 0 3px rgba(19, 127, 236, 0.1), 0 0 12px rgba(19, 127, 236, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      background-color: rgba(15, 23, 42, 0.8);
-    }
-
-    /* Hover state */
-    select[id="filter-building"]:hover:not(:focus),
-    select[id="filter-status"]:hover:not(:focus) {
+    .dropdown-trigger:hover {
       border-color: rgba(19, 127, 236, 0.5);
       box-shadow: 0 4px 12px rgba(19, 127, 236, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
       background-color: rgba(15, 23, 42, 0.7);
     }
 
-    /* Light mode hover */
-    body.light-mode select[id="filter-building"]:hover:not(:focus),
-    body.light-mode select[id="filter-status"]:hover:not(:focus) {
+    .dropdown-trigger.open {
+      border-color: #137fec;
+      box-shadow: 0 0 0 3px rgba(19, 127, 236, 0.1), 0 0 12px rgba(19, 127, 236, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background-color: rgba(15, 23, 42, 0.8);
+    }
+
+    .dropdown-arrow {
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .dropdown-trigger.open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background-color: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .dropdown-menu.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown-option {
+      padding: 10px 14px;
+      color: #e2e8f0;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .dropdown-option:hover {
+      background-color: rgba(19, 127, 236, 0.15);
+      color: #137fec;
+      border-left-color: #137fec;
+      padding-left: 16px;
+    }
+
+    .dropdown-option.selected {
+      background-color: rgba(19, 127, 236, 0.2);
+      color: #137fec;
+      border-left-color: #137fec;
+      font-weight: 600;
+    }
+
+    /* Light mode dropdowns */
+    body.light-mode .dropdown-trigger {
+      background-color: rgba(241, 245, 249, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      color: #1e293b;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    body.light-mode .dropdown-trigger:hover {
       border-color: rgba(19, 127, 236, 0.4);
       background-color: rgba(241, 245, 249, 0.9);
     }
 
-    /* Light mode focus */
-    body.light-mode select[id="filter-building"]:focus,
-    body.light-mode select[id="filter-status"]:focus {
+    body.light-mode .dropdown-trigger.open {
       border-color: #137fec;
       background-color: rgba(241, 245, 249, 1);
       box-shadow: 0 0 0 3px rgba(19, 127, 236, 0.1), 0 0 12px rgba(19, 127, 236, 0.3);
     }
 
-    /* Option styling */
-    select[id="filter-building"] option,
-    select[id="filter-status"] option {
-      background-color: #1e293b;
-      color: #e2e8f0;
-      padding: 8px 12px;
-      margin: 4px 0;
+    body.light-mode .dropdown-menu {
+      background-color: rgba(241, 245, 249, 0.95);
+      border: 1px solid rgba(226, 232, 240, 0.5);
     }
 
-    /* Light mode options */
-    body.light-mode select[id="filter-building"] option,
-    body.light-mode select[id="filter-status"] option {
-      background-color: #f1f5f9;
+    body.light-mode .dropdown-option {
       color: #1e293b;
     }
 
-    /* Disabled state */
-    select[id="filter-building"]:disabled,
-    select[id="filter-status"]:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    body.light-mode .dropdown-option:hover {
+      background-color: rgba(19, 127, 236, 0.1);
+      color: #137fec;
+    }
+
+    body.light-mode .dropdown-option.selected {
+      background-color: rgba(19, 127, 236, 0.15);
+      color: #137fec;
+    }
+
+    /* Remove old select styling */
+    select[id="filter-building"],
+    select[id="filter-status"] {
+      display: none;
     }
   </style>
 </head>
@@ -582,18 +641,41 @@
             </button>
           </div>
           <div class="flex gap-2">
-            <select id="filter-building"
-              class="flex-1 min-w-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer">
-              <option value="all">🏢 All Buildings</option>
-              <option value="Ramanujacharya Block">Ramanujacharya Block</option>
-              <option value="Madhwacharya Block">Madhwacharya Block (MB)</option>
-            </select>
-            <select id="filter-status"
-              class="flex-1 min-w-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer">
-              <option value="all">⏱ All Status</option>
-              <option value="vacant">✅ Vacant</option>
-              <option value="occupied">🔴 Occupied</option>
-            </select>
+            <!-- Building Dropdown -->
+            <div class="custom-dropdown flex-1">
+              <div class="dropdown-trigger" onclick="toggleDropdown('buildingDropdown')">
+                <span id="filter-building-text">🏢 All Buildings</span>
+                <div class="dropdown-arrow">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 9L1 4h10z" fill="#137fec"/>
+                  </svg>
+                </div>
+              </div>
+              <div id="buildingDropdown" class="dropdown-menu">
+                <div class="dropdown-option selected" onclick="selectOption('buildingDropdown', 'all', '🏢 All Buildings')">🏢 All Buildings</div>
+                <div class="dropdown-option" onclick="selectOption('buildingDropdown', 'Ramanujacharya Block', 'Ramanujacharya Block')">Ramanujacharya Block</div>
+                <div class="dropdown-option" onclick="selectOption('buildingDropdown', 'Madhwacharya Block', 'Madhwacharya Block (MB)')">Madhwacharya Block (MB)</div>
+              </div>
+            </div>
+            <input type="hidden" id="filter-building" value="all">
+
+            <!-- Status Dropdown -->
+            <div class="custom-dropdown flex-1">
+              <div class="dropdown-trigger" onclick="toggleDropdown('statusDropdown')">
+                <span id="filter-status-text">⏱ All Status</span>
+                <div class="dropdown-arrow">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 9L1 4h10z" fill="#137fec"/>
+                  </svg>
+                </div>
+              </div>
+              <div id="statusDropdown" class="dropdown-menu">
+                <div class="dropdown-option selected" onclick="selectOption('statusDropdown', 'all', '⏱ All Status')">⏱ All Status</div>
+                <div class="dropdown-option" onclick="selectOption('statusDropdown', 'vacant', '✅ Vacant')">✅ Vacant</div>
+                <div class="dropdown-option" onclick="selectOption('statusDropdown', 'occupied', '🔴 Occupied')">🔴 Occupied</div>
+              </div>
+            </div>
+            <input type="hidden" id="filter-status" value="all">
           </div>
         </div>
 
@@ -1373,6 +1455,69 @@
 
       // Restore last visited section or handle URL hash on page load
       window.restoreSection();
+    });
+
+    // Custom Dropdown Functions
+    function toggleDropdown(dropdownId) {
+      const menu = document.getElementById(dropdownId);
+      const trigger = menu.previousElementSibling;
+      
+      // Close other dropdowns
+      document.querySelectorAll('.dropdown-menu.open').forEach(m => {
+        if (m.id !== dropdownId) {
+          m.classList.remove('open');
+          m.previousElementSibling.classList.remove('open');
+        }
+      });
+      
+      // Toggle current dropdown
+      menu.classList.toggle('open');
+      trigger.classList.toggle('open');
+    }
+
+    function selectOption(dropdownId, value, displayText) {
+      const menu = document.getElementById(dropdownId);
+      const trigger = menu.previousElementSibling;
+      
+      // Update display text
+      const textSpan = trigger.querySelector('span:first-child');
+      textSpan.textContent = displayText;
+      
+      // Determine which hidden input to update
+      let inputId;
+      if (dropdownId === 'buildingDropdown') {
+        inputId = 'filter-building';
+      } else if (dropdownId === 'statusDropdown') {
+        inputId = 'filter-status';
+      }
+      
+      // Update hidden input value
+      const hiddenInput = document.getElementById(inputId);
+      hiddenInput.value = value;
+      
+      // Trigger change event for dashboard.js filtering
+      const changeEvent = new Event('change', { bubbles: true });
+      hiddenInput.dispatchEvent(changeEvent);
+      
+      // Update selected state in dropdown options
+      menu.querySelectorAll('.dropdown-option').forEach(option => {
+        option.classList.remove('selected');
+      });
+      event.target.classList.add('selected');
+      
+      // Close dropdown
+      menu.classList.remove('open');
+      trigger.classList.remove('open');
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.closest('.custom-dropdown')) {
+        document.querySelectorAll('.dropdown-menu.open').forEach(menu => {
+          menu.classList.remove('open');
+          menu.previousElementSibling.classList.remove('open');
+        });
+      }
     });
   </script>
   <script src="/js/chaos-bg.js?v=6.0"></script>
