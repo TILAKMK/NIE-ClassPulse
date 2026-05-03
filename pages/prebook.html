@@ -27,6 +27,18 @@
     .loader { width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#137fec;border-radius:50%;animation:spin .8s linear infinite; }
     .loader-sm { width:20px;height:20px;border:3px solid #e2e8f0;border-top-color:#137fec;border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
+    /* Fix date/time input styling in dark mode */
+    input[type="date"],
+    input[type="time"] {
+      color-scheme: light;
+    }
+    .dark input[type="date"],
+    .dark input[type="time"] {
+      color-scheme: dark;
+      background-color: #334155;
+      color: #f1f5f9;
+      border-color: #475569;
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
