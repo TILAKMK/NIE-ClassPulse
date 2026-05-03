@@ -49,7 +49,12 @@ async function loadUser() {
   const user = await getUser();
   if (user) {
     const displayEmail = getDisplayEmail() || user.email;
-    if (userGreeting) userGreeting.textContent = `${displayEmail} · Logged In`;
+    if (userGreeting) {
+      // Extract username part (before @) to reduce navbar congestion
+      const username = displayEmail.split('@')[0];
+      userGreeting.textContent = `${username} · Logged In`;
+      userGreeting.title = `${displayEmail} - Logged In`;  // Show full email on hover
+    }
     if (authBtn) {
       authBtn.textContent = 'Logout';
       authBtn.onclick = e => { e.preventDefault(); logout(); };
