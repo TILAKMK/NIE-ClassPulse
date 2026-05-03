@@ -932,7 +932,7 @@
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Email</h3>
                 <p class="text-slate-600 dark:text-slate-400">
                   <a href="mailto:contact@nieclasspulse.com" class="hover:text-primary transition-colors">
-                    contact@=nieclasspulse@gmai.com
+                    contact@nieclasspulse@gmai.com
                   </a>
                 </p>
               </div>
@@ -1168,7 +1168,72 @@
 
         // Scroll to top
         window.scrollTo(0, 0);
+
+        // Save section to localStorage and update URL hash
+        localStorage.setItem('lastSection', sectionId);
+        window.location.hash = sectionId;
       };
+
+      // Restore section from localStorage or URL hash on page load
+      window.restoreSection = function () {
+        let sectionToShow = 'home';
+
+        // First priority: URL hash (if user directly navigated with hash)
+        if (window.location.hash) {
+          sectionToShow = window.location.hash.substring(1); // Remove '#'
+        } else {
+          // Second priority: localStorage (last visited section)
+          const lastSection = localStorage.getItem('lastSection');
+          if (lastSection) {
+            sectionToShow = lastSection;
+          }
+        }
+
+        // Navigate to the section without triggering hash change
+        document.querySelectorAll('.content-section').forEach(section => {
+          section.classList.add('hidden');
+        });
+
+        let target = document.getElementById(sectionToShow + '-section');
+        if (!target) {
+          target = document.getElementById(sectionToShow);
+        }
+        if (target) {
+          target.classList.remove('hidden');
+        }
+
+        // Update navbar styles
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.classList.remove('active-nav');
+        });
+        const activeTopLink = document.getElementById('nav-' + sectionToShow);
+        if (activeTopLink) {
+          activeTopLink.classList.add('active-nav');
+        }
+
+        document.querySelectorAll('.fixed.bottom-0 a').forEach(link => {
+          link.classList.remove('text-primary');
+          link.classList.add('text-slate-400');
+        });
+        const activeMobLink = document.getElementById('mob-' + sectionToShow);
+        if (activeMobLink) {
+          activeMobLink.classList.remove('text-slate-400');
+          activeMobLink.classList.add('text-primary');
+        }
+
+        // Update URL hash without recursion
+        if (!window.location.hash || window.location.hash.substring(1) !== sectionToShow) {
+          window.history.replaceState(null, null, '#' + sectionToShow);
+        }
+      };
+
+      // Handle direct hash changes in URL
+      window.addEventListener('hashchange', function() {
+        const sectionId = window.location.hash.substring(1);
+        if (sectionId) {
+          window.showSection(sectionId);
+        }
+      });
 
       window.toggleMobileMenu = function () {
         const menu = document.getElementById('mobile-menu');
@@ -1220,6 +1285,9 @@
           document.body.classList.toggle('light-mode');
         });
       }
+
+      // Restore last visited section or handle URL hash on page load
+      window.restoreSection();
     });
   </script>
   <script src="/js/chaos-bg.js?v=6.0"></script>
