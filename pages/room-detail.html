@@ -225,7 +225,7 @@
 </script>
 
 <script type="module">
-  import { getRoomById, updateRoomStatus } from '/js/rooms.js';
+  import { getRoomById, updateRoomStatus, getActualRoomStatus } from '/js/rooms.js';
   import { supabase }                      from '/js/supabase.js';
   import { getUserRole }                   from '/js/auth.js';
 
@@ -284,17 +284,30 @@
   }
 
   function refreshRoomUI(room) {
+    // Get actual status based on current time vs session times
+    const actualStatus = getActualRoomStatus(room);
+    const isVacant = actualStatus === 'VACANT';
+    const isOccupied = actualStatus === 'OCCUPIED';
+    const isReserved = actualStatus === 'RESERVED';
+
     // Update badge
     const badge = document.getElementById('status-badge');
-    const isVacant = room.status === 'vacant';
-    const badgeCls = isVacant
-      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-    badge.innerHTML = `<span class="${badgeCls} text-sm font-bold px-3 py-1 rounded-full uppercase">${isVacant ? 'Vacant' : 'Occupied'}</span>`;
+    let badgeCls, badgeText;
+    if (isVacant) {
+      badgeCls = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      badgeText = 'Vacant';
+    } else if (isReserved) {
+      badgeCls = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      badgeText = 'Reserved';
+    } else {
+      badgeCls = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      badgeText = 'Occupied';
+    }
+    badge.innerHTML = `<span class="${badgeCls} text-sm font-bold px-3 py-1 rounded-full uppercase">${badgeText}</span>`;
 
     // Update session info
     const sessionEl = document.getElementById('current-session');
-    if (!isVacant && room.current_subject) {
+    if ((isOccupied || isReserved) && room.current_subject) {
       sessionEl.classList.remove('hidden');
       document.getElementById('cs-subject').textContent = room.current_subject;
       document.getElementById('cs-section').textContent = room.section ?? '';

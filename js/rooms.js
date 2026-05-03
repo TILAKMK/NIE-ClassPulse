@@ -141,3 +141,34 @@ export function subscribeToRoomChanges(callback) {
     )
     .subscribe();
 }
+
+// ──────────────────────────────────────────────────────
+// Utility: Calculate actual room status based on current time
+// Returns: 'VACANT' | 'OCCUPIED' | 'RESERVED'
+// ──────────────────────────────────────────────────────
+export function getActualRoomStatus(room) {
+  // If no session times, return database status
+  if (!room.session_start || !room.session_end) {
+    return room.status === 'vacant' ? 'VACANT' : 'OCCUPIED';
+  }
+
+  // Get current time in IST (India Standard Time)
+  const now = new Date();
+  const utcMs = now.getTime();
+  const istMs = utcMs + (5.5 * 60 * 60 * 1000);
+  const istTime = new Date(istMs);
+  const currentTimeStr = `${String(istTime.getUTCHours()).padStart(2,'0')}:${String(istTime.getUTCMinutes()).padStart(2,'0')}`;
+
+  // Parse session start and end times (format: HH:MM:SS or HH:MM)
+  const startTimeStr = room.session_start.substring(0, 5);
+  const endTimeStr = room.session_end.substring(0, 5);
+
+  // Compare as strings (HH:MM format)
+  if (currentTimeStr < startTimeStr) {
+    return 'RESERVED';  // Class hasn't started yet
+  } else if (currentTimeStr < endTimeStr) {
+    return 'OCCUPIED';  // Class is ongoing
+  } else {
+    return 'VACANT';    // Class has ended
+  }
+}

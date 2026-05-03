@@ -1,7 +1,7 @@
 // ============================================================
 //  js/dashboard.js  —  Fixed: realtime, floor tabs, staff label
 // ============================================================
-import { getAllRooms, getRoomStats, subscribeToRoomChanges } from './rooms.js';
+import { getAllRooms, getRoomStats, subscribeToRoomChanges, getActualRoomStatus } from './rooms.js';
 import { initScheduler }                                    from './scheduler.js';
 import { getUser, getDisplayEmail, logout }                  from './auth.js';
 
@@ -155,13 +155,19 @@ function fmtTime(t) {
 }
 
 function buildRoomCard(room) {
-  const isVacant   = room.status === 'vacant';
-  const isOccupied = !isVacant;
-  const bar   = isVacant ? 'bg-green-500' : 'bg-red-500';
+  // Get actual status based on current time vs session times
+  const actualStatus = getActualRoomStatus(room);
+  const isVacant   = actualStatus === 'VACANT';
+  const isOccupied = actualStatus === 'OCCUPIED';
+  const isReserved = actualStatus === 'RESERVED';
+  
+  const bar = isVacant ? 'bg-green-500' : (isReserved ? 'bg-blue-500' : 'bg-red-500');
   const badge = isVacant
     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
-  const label = isVacant ? 'Vacant' : 'Occupied';
+    : (isReserved 
+      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400');
+  const label = isVacant ? 'Vacant' : (isReserved ? 'Reserved' : 'Occupied');
   const floor = floorLabel(room.room_number);
 
   const body = isOccupied && room.current_subject
@@ -170,16 +176,22 @@ function buildRoomCard(room) {
          <p class="font-bold text-primary text-sm">${room.current_subject}</p>
          ${room.session_start ? `<p class="text-xs text-slate-400 mt-0.5">${fmtTime(room.session_start)} – ${fmtTime(room.session_end)}</p>` : ''}
        </div>`
-    : `<div class="space-y-2 mb-6">
-         <div class="flex items-center gap-2 text-sm text-slate-400">
-           <span class="material-symbols-outlined text-base">location_on</span>
-           <span>${room.building}</span>
-         </div>
-         <div class="flex items-center gap-2 text-sm text-slate-400">
-           <span class="material-symbols-outlined text-base">floor</span>
-           <span>${floor}</span>
-         </div>
-       </div>`;
+    : (isReserved && room.current_subject
+      ? `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-6">
+           <p class="text-xs text-slate-500 uppercase font-bold mb-1">Reserved</p>
+           <p class="font-bold text-primary text-sm">${room.current_subject}</p>
+           ${room.session_start ? `<p class="text-xs text-slate-400 mt-0.5">${fmtTime(room.session_start)} – ${fmtTime(room.session_end)}</p>` : ''}
+         </div>`
+      : `<div class="space-y-2 mb-6">
+           <div class="flex items-center gap-2 text-sm text-slate-400">
+             <span class="material-symbols-outlined text-base">location_on</span>
+             <span>${room.building}</span>
+           </div>
+           <div class="flex items-center gap-2 text-sm text-slate-400">
+             <span class="material-symbols-outlined text-base">floor</span>
+             <span>${floor}</span>
+           </div>
+         </div>`);
 
   return `
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-shadow room-card cursor-pointer" data-id="${room.id}">
