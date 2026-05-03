@@ -33,7 +33,12 @@ function floorLabel(room_number) {
 
 async function init() {
   if (todayLabel) {
-    todayLabel.textContent = new Date().toLocaleDateString('en-IN', {
+    // Use IST for date display
+    const now = new Date();
+    const utcMs = now.getTime();
+    const istMs = utcMs + (5.5 * 60 * 60 * 1000);
+    const istTime = new Date(istMs);
+    todayLabel.textContent = istTime.toLocaleDateString('en-IN', {
       weekday:'long', day:'numeric', month:'long'
     });
   }

@@ -129,9 +129,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   async function loadBookings(user) {
     try {
+      // Get current time in IST (India Standard Time)
       const now = new Date();
-      const todayIST = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-      const todayStr = todayIST.toISOString().split('T')[0];
+      const utcMs = now.getTime();
+      const istMs = utcMs + (5.5 * 60 * 60 * 1000);
+      const istTime = new Date(istMs);
+      const todayStr = `${String(istTime.getUTCFullYear()).padStart(4, '0')}-${String(istTime.getUTCMonth() + 1).padStart(2, '0')}-${String(istTime.getUTCDate()).padStart(2, '0')}`;
+      const nowTimeStr = `${String(istTime.getUTCHours()).padStart(2, '0')}:${String(istTime.getUTCMinutes()).padStart(2, '0')}`;
+      console.log('[reserved] Today IST:', todayStr, 'Now time IST:', nowTimeStr);
 
       const { data, error } = await supabase
         .from('bookings')
@@ -141,14 +146,26 @@ window.addEventListener('DOMContentLoaded', () => {
         .order('start_time', { ascending: true });
 
       if (error) throw error;
+      console.log('[reserved] All future bookings:', data);
 
-      // Filter out expired bookings (past end time today)
-      const nowTimeStr = todayIST.toTimeString().substring(0, 5);
+      // Filter out past bookings
+      // Only include bookings where:
+      // - date is in future, OR
+      // - date is today AND end_time hasn't passed yet
       const active = data.filter(b => {
-        if (b.date > todayStr) return true;
-        return b.end_time.substring(0,5) > nowTimeStr;
+        if (b.date > todayStr) {
+          // Future date - always include
+          return true;
+        }
+        // Same day - check if booking hasn't ended yet
+        if (b.date === todayStr) {
+          const bookingEndTime = b.end_time.substring(0, 5);
+          return bookingEndTime > nowTimeStr;
+        }
+        return false;
       });
 
+      console.log('[reserved] Active bookings after time filter:', active);
       document.getElementById('loading').classList.add('hidden');
 
       if (!active.length) {
@@ -166,6 +183,7 @@ window.addEventListener('DOMContentLoaded', () => {
       });
 
     } catch (err) {
+      console.error('[reserved] Error loading bookings:', err);
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('empty-state').classList.remove('hidden');
     }
