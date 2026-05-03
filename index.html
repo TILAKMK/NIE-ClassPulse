@@ -940,10 +940,10 @@
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       // Initialize theme on page load
-      if (localStorage.getItem('theme') === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
+      if (localStorage.getItem('theme') === 'light') {
         document.body.classList.add('light-mode');
+      } else {
+        document.documentElement.classList.add('dark');
       }
 
       window.toggleTheme = function () {
