@@ -316,6 +316,91 @@
     .mobile-nav-link span {
       color: #ffffff !important;
     }
+
+    /* Enhanced Dropdown Styling */
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23137fec' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px;
+      padding-right: 32px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Default select styling */
+    select[id="filter-building"],
+    select[id="filter-status"] {
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(100, 116, 139, 0.3);
+      color: #e2e8f0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    /* Light mode select */
+    body.light-mode select[id="filter-building"],
+    body.light-mode select[id="filter-status"] {
+      background-color: rgba(241, 245, 249, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      color: #1e293b;
+    }
+
+    /* Focus state */
+    select[id="filter-building"]:focus,
+    select[id="filter-status"]:focus {
+      outline: none;
+      border-color: #137fec;
+      box-shadow: 0 0 0 3px rgba(19, 127, 236, 0.1), 0 0 12px rgba(19, 127, 236, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background-color: rgba(15, 23, 42, 0.8);
+    }
+
+    /* Hover state */
+    select[id="filter-building"]:hover:not(:focus),
+    select[id="filter-status"]:hover:not(:focus) {
+      border-color: rgba(19, 127, 236, 0.5);
+      box-shadow: 0 4px 12px rgba(19, 127, 236, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background-color: rgba(15, 23, 42, 0.7);
+    }
+
+    /* Light mode hover */
+    body.light-mode select[id="filter-building"]:hover:not(:focus),
+    body.light-mode select[id="filter-status"]:hover:not(:focus) {
+      border-color: rgba(19, 127, 236, 0.4);
+      background-color: rgba(241, 245, 249, 0.9);
+    }
+
+    /* Light mode focus */
+    body.light-mode select[id="filter-building"]:focus,
+    body.light-mode select[id="filter-status"]:focus {
+      border-color: #137fec;
+      background-color: rgba(241, 245, 249, 1);
+      box-shadow: 0 0 0 3px rgba(19, 127, 236, 0.1), 0 0 12px rgba(19, 127, 236, 0.3);
+    }
+
+    /* Option styling */
+    select[id="filter-building"] option,
+    select[id="filter-status"] option {
+      background-color: #1e293b;
+      color: #e2e8f0;
+      padding: 8px 12px;
+      margin: 4px 0;
+    }
+
+    /* Light mode options */
+    body.light-mode select[id="filter-building"] option,
+    body.light-mode select[id="filter-status"] option {
+      background-color: #f1f5f9;
+      color: #1e293b;
+    }
+
+    /* Disabled state */
+    select[id="filter-building"]:disabled,
+    select[id="filter-status"]:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -498,13 +583,13 @@
           </div>
           <div class="flex gap-2">
             <select id="filter-building"
-              class="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+              class="flex-1 min-w-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer">
               <option value="all">🏢 All Buildings</option>
               <option value="Ramanujacharya Block">Ramanujacharya Block</option>
               <option value="Madhwacharya Block">Madhwacharya Block (MB)</option>
             </select>
             <select id="filter-status"
-              class="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:ring-2 focus:ring-primary outline-none cursor-pointer">
+              class="flex-1 min-w-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer">
               <option value="all">⏱ All Status</option>
               <option value="vacant">✅ Vacant</option>
               <option value="occupied">🔴 Occupied</option>
