@@ -78,10 +78,20 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
     updates.manual_override = true;
     if (updates.session_end) {
       const [h, m] = updates.session_end.split(':').map(Number);
-      const d = new Date();
-      const overrideUntil = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, 0);
-      // If end time is earlier than now, it's likely for the next day
-      if (overrideUntil < d) overrideUntil.setDate(overrideUntil.getDate() + 1);
+      
+      let overrideUntil;
+      if (sessionInfo.date) {
+        // Use provided date
+        const [yyyy, mm, dd] = sessionInfo.date.split('-').map(Number);
+        overrideUntil = new Date(yyyy, mm - 1, dd, h, m, 0);
+      } else {
+        // Use today
+        const d = new Date();
+        overrideUntil = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, 0);
+        // If end time is earlier than now without a specific date, it's likely for the next day
+        if (overrideUntil < d) overrideUntil.setDate(overrideUntil.getDate() + 1);
+      }
+      
       updates.manual_override_until = overrideUntil.toISOString();
     }
   } else {

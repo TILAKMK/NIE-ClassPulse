@@ -149,6 +149,11 @@
                    class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
             <input id="inp-faculty" placeholder="Faculty name (optional)" type="text"
                    class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
+            <div>
+              <label class="text-xs text-slate-400 mb-1 block">Date</label>
+              <input id="inp-date" type="date"
+                     class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
+            </div>
             <div class="flex gap-2">
               <div class="flex-1">
                 <label class="text-xs text-slate-400 mb-1 block">Start Time</label>
@@ -248,15 +253,13 @@
 
   // IST time string
   function nowTimeStr() {
-    const now = new Date();
-    const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000));
-    return `${String(ist.getHours()).padStart(2,'0')}:${String(ist.getMinutes()).padStart(2,'0')}`;
+    const optionsTime = { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false };
+    return new Intl.DateTimeFormat('en-US', optionsTime).format(new Date());
   }
 
   function todayIST() {
-    const now = new Date();
-    const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000) - (now.getTimezoneOffset() * 60 * 1000));
-    return ist.toLocaleDateString('en-US', { weekday: 'long' });
+    const optionsDate = { timeZone: 'Asia/Kolkata', weekday: 'long' };
+    return new Intl.DateTimeFormat('en-US', optionsDate).format(new Date());
   }
 
   async function fetchAllSchedules(roomId) {
@@ -444,9 +447,18 @@
   function bindEditor(room) {
     const msg = document.getElementById('update-msg');
 
+    // Auto-fill date to today like prebook
+    const todayObj = new Date();
+    const istMs = todayObj.getTime() + (5.5 * 60 * 60 * 1000);
+    const dateInput = document.getElementById('inp-date');
+    if (dateInput) {
+      dateInput.value = new Date(istMs).toISOString().split('T')[0];
+    }
+
     document.getElementById('btn-occupy')?.addEventListener('click', async () => {
       const subject = document.getElementById('inp-subject').value.trim();
       const faculty = document.getElementById('inp-faculty').value.trim();
+      const date    = document.getElementById('inp-date') ? document.getElementById('inp-date').value : '';
       const start   = document.getElementById('inp-start').value;
       const end     = document.getElementById('inp-end').value;
       if (!subject) { msg.style.color='red'; msg.textContent='⚠️ Enter a subject name.'; return; }
@@ -456,7 +468,7 @@
       btn.textContent = 'Saving…';
 
       try {
-        await updateRoomStatus(room.id, 'occupied', { subject, faculty, start, end });
+        await updateRoomStatus(room.id, 'occupied', { subject, faculty, date, start, end });
         msg.style.color = 'green';
         msg.textContent = '✅ Room marked occupied!';
         // Reload page after short delay so UI refreshes fully
