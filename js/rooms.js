@@ -25,12 +25,27 @@ export async function getRoomById(id) {
 export async function getRoomStats() {
   const { data, error } = await supabase
     .from('classrooms')
-    .select('status');
+    .select('*');
   if (error) throw error;
+  
+  // Apply time-based status logic to calculate actual occupied/vacant counts
+  // This must match the logic used in room cards (getActualRoomStatus)
+  let vacant = 0;
+  let occupied = 0;
+  
+  data.forEach(room => {
+    const actualStatus = getActualRoomStatus(room);
+    if (actualStatus === 'VACANT') {
+      vacant++;
+    } else if (actualStatus === 'OCCUPIED') {
+      occupied++;
+    }
+  });
+  
   return {
     total:    data.length,
-    vacant:   data.filter(r => r.status === 'vacant').length,
-    occupied: data.filter(r => r.status === 'occupied').length,
+    vacant:   vacant,
+    occupied: occupied,
   };
 }
 
