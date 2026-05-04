@@ -100,7 +100,8 @@ function togglePw() {
 <script type="module">
   import { supabase } from '/js/supabase.js';
 
-  const SHARED_PASSWORD = 'NIE@ClassPulse2025';
+  // Staff password is mathematically hashed to hide it from GitHub.
+  const EXPECTED_HASH = '7cd9be0bc3d1de581dcc87209297bb4779d1382f06f6c56b4525acfe998fc057';
 
   const btn   = document.getElementById('login-btn');
   const errEl = document.getElementById('login-error');
@@ -126,7 +127,11 @@ function togglePw() {
       errEl.classList.remove('hidden'); return;
     }
 
-    if (password !== SHARED_PASSWORD) {
+    // Hash the input password to check against the expected hash safely
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
+    const hashedInput = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    if (hashedInput !== EXPECTED_HASH) {
       errEl.textContent = '❌ Wrong password. Ask your admin for the staff password.';
       errEl.classList.remove('hidden'); return;
     }
