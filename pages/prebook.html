@@ -283,30 +283,28 @@ window.addEventListener('DOMContentLoaded', () => {
 
       const grouped = {};
 
-      // group by room
+      // group schedules by room
       (schedules || []).forEach(s => {
         if (!grouped[s.room_id]) grouped[s.room_id] = [];
         grouped[s.room_id].push(s);
       });
 
       Object.entries(grouped).forEach(([roomId, slots]) => {
-        // sort by start time
-        slots.sort((a, b) => a.start_time.localeCompare(b.start_time));
+        const has9to10  = slots.some(s => s.start_time.startsWith('09:00'));
+        const has10to11 = slots.some(s => s.start_time.startsWith('10:00'));
 
-        let isLab = false;
+        const has1130to1230 = slots.some(s => s.start_time.startsWith('11:30'));
+        const has1230to130  = slots.some(s => s.start_time.startsWith('12:30'));
 
-        for (let i = 0; i < slots.length - 1; i++) {
-          const currEnd = slots[i].end_time;
-          const nextStart = slots[i + 1].start_time;
+        const has230to330 = slots.some(s => s.start_time.startsWith('14:30'));
+        const has330to430 = slots.some(s => s.start_time.startsWith('15:30'));
 
-          // if back-to-back → treat as lab
-          if (currEnd === nextStart) {
-            isLab = true;
-            break;
-          }
-        }
+        const isLab =
+          (has9to10 && has10to11) ||
+          (has1130to1230 && has1230to130) ||
+          (has230to330 && has330to430);
 
-        // ❗ only block if NOT lab
+        // ❗ ONLY block if NOT lab
         if (!isLab) {
           timetableClash.add(Number(roomId));
         }
