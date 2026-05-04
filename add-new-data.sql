@@ -1,4 +1,4 @@
--- TASK 1: ADD NEW CLASSROOMS
+-- TASK 1: ADD NEW CLASSROOMS (Upsert to avoid duplicate errors)
 insert into public.classrooms
 (room_number, building, floor, department, semester, section, capacity, facilities, status)
 values
@@ -7,7 +7,8 @@ values
 ('204', 'Ramanujacharya Block', '1st Floor', 'MCA', '2nd', 'MCA-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
 ('205', 'Ramanujacharya Block', '1st Floor', 'MCA', '2nd', 'MCA-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
 ('208', 'Ramanujacharya Block', '1st Floor', 'MCA', '2nd', 'MCA-A', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant'),
-('209', 'Ramanujacharya Block', '1st Floor', 'MCA', '2nd', 'MCA-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant');
+('209', 'Ramanujacharya Block', '1st Floor', 'MCA', '2nd', 'MCA-B', 60, 'Projector, Whiteboard, Wi-Fi', 'vacant')
+on conflict (room_number) do nothing;
 
 
 -- TASK 3: ADD SCHEDULE DATA (208 MCA A)
@@ -83,8 +84,8 @@ values
 ('209','Thursday','15:30','16:30','JAVA','MCA-B','2nd'),
 
 -- FRIDAY
-('209','Friday','11:30','12:30','SE','MCA-B','2nd')
-('209','Friday','12:30','13:30','DSA','MCA-B','2nd')
+('209','Friday','11:30','12:30','SE','MCA-B','2nd'),
+('209','Friday','12:30','13:30','DSA','MCA-B','2nd'),
 ('209','Friday','14:30','16:30','SE TUTORIAL','MCA-B','2nd')
 
 ) as v(room_number,day,start_time,end_time,subject,section,semester)
