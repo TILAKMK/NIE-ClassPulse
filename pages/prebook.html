@@ -280,11 +280,12 @@ window.addEventListener('DOMContentLoaded', () => {
         .gt('end_time', start + ':00');
 
      const timetableClash = new Set((schedules || [])
+     .filter(s => !/lab/i.test(s.subject || ''))
   .map(s => s.room_id));
       // Get existing bookings that clash
       const { data: bookings } = await supabase
   .from('bookings')
-  .select('room_id, start_time, end_time')
+  .select('room_id, start_time, end_time, subject')
   .eq('date', date)
   .lt('start_time', end + ':00')
   .gt('end_time', start + ':00');
