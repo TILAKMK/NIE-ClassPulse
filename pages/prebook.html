@@ -280,14 +280,7 @@ window.addEventListener('DOMContentLoaded', () => {
         .gt('end_time', start + ':00');
 
      const timetableClash = new Set((schedules || [])
-  .filter(s => {
-    const sStart = s.start_time.substring(0,5);
-    const sEnd   = s.end_time.substring(0,5);
-
-    return !(sEnd <= start || sStart >= end);
-  })
   .map(s => s.room_id));
-
       // Get existing bookings that clash
       const { data: bookings } = await supabase
   .from('bookings')
@@ -295,15 +288,9 @@ window.addEventListener('DOMContentLoaded', () => {
   .eq('date', date)
   .lt('start_time', end + ':00')
   .gt('end_time', start + ':00');
-      const bookingClash = new Set((bookings || [])
-  .filter(b => {
-    const bStart = b.start_time.substring(0,5);
-    const bEnd   = b.end_time.substring(0,5);
-
-    return !(bEnd <= start || bStart >= end);
-  })
+      
+     const bookingClash = new Set((bookings || [])
   .map(b => b.room_id));
-
       // Filter available rooms
       const available = allRooms.filter(r =>
         !timetableClash.has(r.id) && !bookingClash.has(r.id)
