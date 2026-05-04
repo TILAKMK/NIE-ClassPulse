@@ -274,25 +274,23 @@ window.addEventListener('DOMContentLoaded', () => {
       const dayName = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday:'long' });
       const { data: schedules } = await supabase
         .from('schedules')
-        .select('room_id, start_time, end_time, subject')
+        .select('room_id, start_time, end_time, subject, is_lab')
         .eq('day', dayName)
         .lt('start_time', end + ':00')
         .gt('end_time', start + ':00');
 
       const timetableClash = new Set((schedules || [])
         .filter(s => {
-          // 🔥 IGNORE ALL LAB SLOTS BASED ON TIME SLOT
-          // your lab slots are usually continuous (like 2 hours)
-          
-          const duration = (
-            new Date(`1970-01-01T${s.end_time}`) -
-            new Date(`1970-01-01T${s.start_time}`)
-          ) / (1000 * 60); // minutes
+          const start = s.start_time.substring(0,5);
+          const end   = s.end_time.substring(0,5);
 
-          // 👉 if duration >= 90 → treat as LAB → ignore
-          if (duration >= 90) return false;
+          // ❗ Ignore LAB slots (your exact timings)
+          const isLabSlot =
+            (start === '09:00' && end === '11:00') ||
+            (start === '11:30' && end === '13:30') ||
+            (start === '14:30' && end === '16:30');
 
-          return true;
+          return !isLabSlot; // only block NON-lab classes
         })
         .map(s => s.room_id));
       // Get existing bookings that clash
