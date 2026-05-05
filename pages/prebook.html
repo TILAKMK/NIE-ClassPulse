@@ -279,7 +279,13 @@ window.addEventListener('DOMContentLoaded', () => {
         .lt('start_time', end + ':00')
         .gt('end_time', start + ':00');
 
-      const timetableClash = new Set((schedules || []).map(s => s.room_id));
+      function isLab(subject) {
+        return /lab/i.test(subject || '');
+      }
+
+      // Filter out lab schedules (because classes go to the lab, leaving the classroom vacant)
+      const validClashes = (schedules || []).filter(s => !isLab(s.subject));
+      const timetableClash = new Set(validClashes.map(s => s.room_id));
       // Get existing bookings that clash
       const { data: bookings } = await supabase
   .from('bookings')
