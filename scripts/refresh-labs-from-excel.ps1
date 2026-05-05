@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$excelPath = Join-Path $PWD 'NIE_Lab_Schedule_Corrected.xlsx'
+$excelPath = Join-Path $PWD 'NIE_Lab_Schedule_Updated.xlsx'
 if (-not (Test-Path $excelPath)) {
   throw "Excel file not found: $excelPath"
 }
@@ -13,8 +13,8 @@ function Convert-To24([string]$timeText) {
   $m = [int]$Matches[2]
 
   # Timetable sheet uses 12-hour style without AM/PM.
-  # Treat 01:xx..04:xx as afternoon lab slots.
-  if ($h -le 4) { $h += 12 }
+  # Treat 01:xx..05:xx as afternoon lab slots.
+  if ($h -le 5) { $h += 12 }
 
   return ('{0:D2}:{1:D2}' -f $h, $m)
 }
