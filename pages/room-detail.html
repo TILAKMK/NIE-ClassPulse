@@ -262,6 +262,16 @@
     return new Intl.DateTimeFormat('en-US', optionsDate).format(new Date());
   }
 
+  function floorLabel(room_number) {
+    const n = String(room_number);
+    if (n.startsWith('MB')) return 'Ground Floor';
+    if (n.startsWith('1'))  return 'Ground Floor';
+    if (n.startsWith('2'))  return '1st Floor';
+    if (n.startsWith('3'))  return '2nd Floor';
+    if (n.startsWith('4'))  return '3rd Floor';
+    return '';
+  }
+
   async function fetchAllSchedules(roomId) {
     const { data, error } = await supabase
       .from('schedules')
@@ -323,20 +333,24 @@
 
   async function load() {
     try {
-      const [room, role, allSchedules] = await Promise.all([
-        getRoomById(roomId),
+      const room = await getRoomById(roomId);
+      if (!room) { showError(); return; }
+
+      document.getElementById('room-number').textContent   = room.room_number;
+      document.title = `${room.room_number} Schedule — NIE ClassPulse`;
+      
+      const floor = room.floor || floorLabel(room.room_number);
+      document.getElementById('room-location').textContent = `${room.building} • ${floor}`;
+
+      const [role, allSchedules] = await Promise.all([
         getUserRole(),
-        fetchAllSchedules(roomId),
+        fetchAllSchedules(room.id),
       ]);
 
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('content').classList.remove('hidden');
 
-      document.getElementById('room-number').textContent   = room.room_number;
-      document.getElementById('room-location').textContent = `${room.building} • ${room.floor}`;
-
       refreshRoomUI(room);
-
       if (role === 'teacher' || role === 'cr') {
         document.getElementById('editor-panel').classList.remove('hidden');
         bindEditor(room);
@@ -344,10 +358,10 @@
 
       renderTodaySchedule(allSchedules);
       renderWeekSchedule(allSchedules);
-      subscribeToRoom(roomId);
+      subscribeToRoom(room.id);
 
     } catch (err) {
-      console.error(err);
+      console.error('[room-detail] Load error:', err);
       showError();
     }
   }
@@ -447,12 +461,12 @@
   function bindEditor(room) {
     const msg = document.getElementById('update-msg');
 
-    // Auto-fill date to today like prebook
-    const todayObj = new Date();
-    const istMs = todayObj.getTime() + (5.5 * 60 * 60 * 1000);
+    // Auto-fill date to today correctly
+    const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' };
+    const dateStr = new Intl.DateTimeFormat('en-CA', options).format(new Date());
     const dateInput = document.getElementById('inp-date');
     if (dateInput) {
-      dateInput.value = new Date(istMs).toISOString().split('T')[0];
+      dateInput.value = dateStr;
     }
 
     document.getElementById('btn-occupy')?.addEventListener('click', async () => {

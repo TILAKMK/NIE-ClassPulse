@@ -24,15 +24,13 @@ function isLab(subject) {
   return /lab/i.test(subject || '');
 }
 
-// Get IST time and day — works correctly on any server or device
+// Get IST time, day, and date — works correctly on any server or device
 function getIST() {
-  const now   = new Date();
-  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-  const ist   = new Date(utcMs + (5.5 * 60 * 60 * 1000));
-  const hh    = String(ist.getHours()).padStart(2, '0');
-  const mm    = String(ist.getMinutes()).padStart(2, '0');
-  const day   = ist.toLocaleDateString('en-US', { weekday: 'long' });
-  return { time: `${hh}:${mm}`, day };
+  const now = new Date();
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+  const day = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', weekday: 'long' }).format(now);
+  const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return { time, day, date };
 }
 
 // THE KEY FUNCTION — is this room manually locked by staff?
@@ -46,13 +44,13 @@ function isManuallyLocked(room) {
 }
 
 async function syncRoomStatuses() {
-  const { time, day } = getIST();
-  console.log(`[Scheduler] IST ${time} | ${day}`);
+  const { time, day, date } = getIST();
+  console.log(`[Scheduler] IST ${time} | ${day} | ${date}`);
 
   // Step 1 — fetch all rooms
   const { data: allRooms, error: roomErr } = await supabase
     .from('classrooms')
-    .select('id, status, session_end, manual_override, manual_override_until');
+    .select('id, room_number, status, manual_override, manual_override_until');
 
   if (roomErr || !allRooms) {
     console.error('[Scheduler] Room fetch failed:', roomErr?.message);
@@ -69,7 +67,7 @@ async function syncRoomStatuses() {
     } else {
       // If it WAS manually overridden but is now expired, reset it in DB
       if (room.manual_override) {
-        console.log(`[Scheduler] Override expired for ${room.id} — resetting flag`);
+        console.log(`[Scheduler] Override expired for ${room.room_number} — resetting flag`);
         await supabase.from('classrooms')
           .update({ manual_override: false, manual_override_until: null })
           .eq('id', room.id);
@@ -78,65 +76,53 @@ async function syncRoomStatuses() {
     }
   }
 
-  console.log(`[Scheduler] Locked: ${locked.length} | Unlocked: ${unlocked.length}`);
-
   if (unlocked.length === 0) {
     console.log('[Scheduler] All rooms manually locked — nothing to update');
     return;
   }
 
-  // Step 3 — check if off hours
-  const isWeekend  = day === 'Saturday' || day === 'Sunday';
-  const isBreak    = time >= '11:00' && time < '11:30';
-  const isLunch    = time >= '13:30' && time < '14:30';
-  const isBefore   = time < '09:00';
-  const isAfter    = time >= '17:30';
-  const isOffHours = isWeekend || isBreak || isLunch || isBefore || isAfter;
+  // Step 3 — Fetch active bookings for current time
+  const { data: bookings, error: bookErr } = await supabase
+    .from('bookings')
+    .select('room_id, subject, faculty, start_time, end_time')
+    .eq('date', date)
+    .lte('start_time', time + ':00')
+    .gt('end_time', time + ':00');
 
-  if (isOffHours) {
-    // Off hours — vacate all unlocked rooms
-    const ids = unlocked.map(r => r.id);
-    for (const id of ids) {
-      await supabase.from('classrooms').update({
-        status: 'vacant',
-        current_subject: null,
-        current_faculty: null,
-        session_start:   null,
-        session_end:     null,
-        updated_at:      new Date().toISOString(),
-      }).eq('id', id);
-    }
-    console.log(`[Scheduler] Off hours — vacated ${ids.length} unlocked rooms`);
-    return;
-  }
-
-  // Step 4 — find active timetable slot
+  // Step 4 — Fetch active timetable slot if exists
   const activeSlot = SLOTS.find(s => time >= s.start && time < s.end);
-  if (!activeSlot) {
-    // Between slots — do nothing to unlocked rooms
-    console.log(`[Scheduler] Between slots at ${time} — no timetable changes`);
-    return;
+  let schedules = [];
+  if (activeSlot) {
+    const { data, error } = await supabase
+      .from('schedules')
+      .select('room_id, subject, start_time, end_time')
+      .eq('day', day)
+      .eq('start_time', activeSlot.start + ':00');
+    if (!error) schedules = data;
   }
 
-  // Step 5 — fetch timetable for this slot
-  const { data: schedules, error: schedErr } = await supabase
-    .from('schedules')
-    .select('room_id, subject, start_time, end_time')
-    .eq('day', day)
-    .eq('start_time', activeSlot.start + ':00');
-
-  if (schedErr) {
-    console.error('[Scheduler] Schedule fetch failed:', schedErr?.message);
-    return;
+  if (bookErr) {
+    console.error('[Scheduler] Booking fetch failed:', bookErr.message);
   }
 
-  console.log(`[Scheduler] Timetable: ${schedules?.length ?? 0} classes for slot ${activeSlot.start}`);
+  console.log(`[Scheduler] ${unlocked.length} rooms | ${bookings?.length ?? 0} bookings | ${schedules?.length ?? 0} classes`);
 
-  // Step 6 — update only unlocked rooms
+  // Step 5 — update only unlocked rooms
   for (const room of unlocked) {
+    const book  = bookings?.find(b => b.room_id === room.id);
     const sched = schedules?.find(s => s.room_id === room.id);
 
-    if (sched && !isLab(sched.subject)) {
+    if (book) {
+      // Booking takes precedence
+      await supabase.from('classrooms').update({
+        status:          'occupied',
+        current_subject: book.subject,
+        current_faculty: book.faculty,
+        session_start:   book.start_time,
+        session_end:     book.end_time,
+        updated_at:      new Date().toISOString(),
+      }).eq('id', room.id);
+    } else if (sched && !isLab(sched.subject)) {
       // Timetable class exists → occupied
       await supabase.from('classrooms').update({
         status:          'occupied',
@@ -147,7 +133,7 @@ async function syncRoomStatuses() {
         updated_at:      new Date().toISOString(),
       }).eq('id', room.id);
     } else {
-      // No class or lab → vacant
+      // No class or lab OR between slots OR off hours → vacant
       await supabase.from('classrooms').update({
         status:          'vacant',
         current_subject: null,

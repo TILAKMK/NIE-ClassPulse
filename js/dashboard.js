@@ -1,6 +1,7 @@
 // ============================================================
-//  js/dashboard.js  —  Fixed: realtime, floor tabs, staff label
+//  js/dashboard.js  —  Fixed: navigation, realtime, floor tabs
 // ============================================================
+alert('NIE ClassPulse Fixed Version Loaded - If you see this, click OK and try clicking a room.');
 import { getAllRooms, getRoomStats, subscribeToRoomChanges, getActualRoomStatus } from './rooms.js';
 import { initScheduler }                                    from './scheduler.js';
 import { getUser, getDisplayEmail, logout }                  from './auth.js';
@@ -33,14 +34,9 @@ function floorLabel(room_number) {
 
 async function init() {
   if (todayLabel) {
-    // Use IST for date display
-    const now = new Date();
-    const utcMs = now.getTime();
-    const istMs = utcMs + (5.5 * 60 * 60 * 1000);
-    const istTime = new Date(istMs);
-    todayLabel.textContent = istTime.toLocaleDateString('en-IN', {
-      weekday:'long', day:'numeric', month:'long'
-    });
+    // Use IST for date display correctly
+    const options = { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' };
+    todayLabel.textContent = new Intl.DateTimeFormat('en-IN', options).format(new Date());
   }
   await loadUser();
   await loadRooms();
@@ -195,7 +191,7 @@ function buildRoomCard(room) {
        </div>`;
 
   return `
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-shadow room-card cursor-pointer" data-id="${room.id}">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-shadow room-card cursor-pointer" data-room="${room.room_number}">
       <div class="h-2 ${bar}"></div>
       <div class="p-6">
         <div class="flex justify-between items-start mb-4">
@@ -207,7 +203,7 @@ function buildRoomCard(room) {
         </div>
         ${body}
         <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-          <button class="text-primary text-sm font-semibold hover:underline view-schedule-btn" data-id="${room.id}">
+          <button class="text-primary text-sm font-semibold hover:underline view-schedule-btn">
             View Schedule →
           </button>
         </div>
@@ -216,10 +212,15 @@ function buildRoomCard(room) {
 }
 
 function attachCardListeners() {
-  document.querySelectorAll('.view-schedule-btn, .room-card').forEach(el => {
-    el.addEventListener('click', e => {
-      const id = el.dataset.id;
-      if (id) window.location.href = `/pages/room-detail.html?id=${id}`;
+  document.querySelectorAll('.room-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      e.preventDefault();
+      const num = card.dataset.room;
+      if (num) {
+        const target = `${window.location.origin}/pages/room-detail.html?id=${num}`;
+        console.log('[Dashboard] Navigating to:', target);
+        window.location.assign(target);
+      }
     });
   });
 }

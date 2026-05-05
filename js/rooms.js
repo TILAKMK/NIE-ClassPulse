@@ -13,12 +13,28 @@ export async function getAllRooms() {
 }
 
 export async function getRoomById(id) {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('classrooms')
     .select('*')
     .eq('id', id)
     .single();
-  if (error) throw error;
+  
+  // Fallback to room_number if ID lookup fails or finds nothing
+  if (error || !data) {
+    console.log('[rooms.js] ID lookup failed, trying room_number:', id);
+    const { data: alt, error: altErr } = await supabase
+      .from('classrooms')
+      .select('*')
+      .eq('room_number', id)
+      .single();
+    
+    if (altErr) {
+      console.error('[rooms.js] Both ID and room_number lookups failed:', altErr.message);
+      throw altErr;
+    }
+    return alt;
+  }
+  
   return data;
 }
 
@@ -181,11 +197,8 @@ export function getActualRoomStatus(room) {
   }
 
   // Get current time in IST (India Standard Time)
-  const now = new Date();
-  const utcMs = now.getTime();
-  const istMs = utcMs + (5.5 * 60 * 60 * 1000);
-  const istTime = new Date(istMs);
-  const currentTimeStr = `${String(istTime.getUTCHours()).padStart(2,'0')}:${String(istTime.getUTCMinutes()).padStart(2,'0')}`;
+  const options = { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false };
+  const currentTimeStr = new Intl.DateTimeFormat('en-GB', options).format(new Date());
 
   // Parse session start and end times (format: HH:MM:SS or HH:MM)
   const startTimeStr = room.session_start.substring(0, 5);
