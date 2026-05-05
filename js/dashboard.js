@@ -1,7 +1,6 @@
 // ============================================================
 //  js/dashboard.js  —  Fixed: navigation, realtime, floor tabs
 // ============================================================
-alert('NIE ClassPulse Fixed Version Loaded - If you see this, click OK and try clicking a room.');
 import { getAllRooms, getRoomStats, subscribeToRoomChanges, getActualRoomStatus } from './rooms.js';
 import { initScheduler }                                    from './scheduler.js';
 import { getUser, getDisplayEmail, logout }                  from './auth.js';
