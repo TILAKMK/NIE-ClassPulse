@@ -40,10 +40,10 @@
   <!-- Info box -->
   <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-xl p-4 mb-6">
     <div class="flex gap-3">
-      <span class="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5">lock</span>
+      <span class="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5">school</span>
       <div class="text-sm text-slate-600 dark:text-slate-300">
-        <p class="font-semibold mb-1">Anyone with the staff password can access</p>
-        <p>Enter <strong>any email</strong> + the <strong>secret staff password</strong> to get editor access.</p>
+        <p class="font-semibold mb-1">NIE Staff &amp; Teachers only</p>
+        <p>Use your <strong>college email</strong> ending with <strong>@nie.ac.in</strong> + the staff password.</p>
         <p class="mt-1 text-xs text-slate-400">Students just open the app — no login needed.</p>
       </div>
     </div>
@@ -124,6 +124,12 @@ function togglePw() {
 
     if (!email) {
       errEl.textContent = 'Please enter your email.';
+      errEl.classList.remove('hidden'); return;
+    }
+
+    // Only allow NIE college email IDs
+    if (!email.toLowerCase().endsWith('@nie.ac.in')) {
+      errEl.textContent = '❌ Only @nie.ac.in college emails are allowed for staff login.';
       errEl.classList.remove('hidden'); return;
     }
 
