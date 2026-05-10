@@ -168,8 +168,8 @@ join (
     ('101', 'Wednesday', '15:30', '16:30', 'PLC LAB-A1', '2nd CSE-A', '2nd'),
     ('101', 'Thursday', '09:00', '10:00', 'ESC-II', '2nd CSE-A', '2nd'),
     ('101', 'Thursday', '10:00', '11:00', 'ETC', '2nd CSE-A', '2nd'),
-    ('101', 'Thursday', '11:30', '12:30', 'MAT TUTORIAL', '2nd CSE-A', '2nd'),
-    ('101', 'Thursday', '12:30', '13:30', 'MAT TUTORIAL', '2nd CSE-A', '2nd'),
+    ('101', 'Thursday', '11:30', '13:30', 'MAT TUTORIAL', '2nd CSE-A', '2nd'),
+    
     ('101', 'Thursday', '14:30', '15:30', 'CHE LAB', '2nd CSE-A', '2nd'),
     ('101', 'Thursday', '15:30', '16:30', 'CHE LAB', '2nd CSE-A', '2nd'),
     ('101', 'Friday', '09:00', '10:00', 'CHE TUT', '2nd CSE-A', '2nd'),
