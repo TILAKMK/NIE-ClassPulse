@@ -45,7 +45,7 @@
   <script type="text/javascript">
     (function() {
       // Replace with your actual Public Key from EmailJS
-      emailjs.init("YOUR_PUBLIC_KEY");
+      emailjs.init("dP5148FZ_OtEIeu-A");
     })();
   </script>
 </head>
@@ -429,7 +429,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Note: You need to set up a template in EmailJS with these variables:
     // {{to_email}}, {{section}}, {{room_number}}, {{subject}}, {{faculty}}, {{date}}, {{time}}, {{booked_by}}
-    emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+    emailjs.send('service_yshtj8r', 'template_wlnzc5i', templateParams)
       .then(() => console.log('SUCCESS! Email sent to students.'))
       .catch((error) => console.error('FAILED...', error));
     
