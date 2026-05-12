@@ -415,6 +415,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (error) { alert('Error: ' + error.message); return; }
 
+    const user = await getUser();
+    const currentDisplayEmail = getDisplayEmail() || (user ? user.email : 'Unknown Staff');
+    
     // Real email notification using EmailJS
     const templateParams = {
       to_email: 'devon590111@gmail.com',
@@ -424,14 +427,17 @@ window.addEventListener('DOMContentLoaded', () => {
       faculty: faculty || 'Not specified',
       date: date,
       time: `${fmtTime(start)} – ${fmtTime(end)}`,
-      booked_by: displayEmail
+      booked_by: currentDisplayEmail
     };
 
-    // Note: You need to set up a template in EmailJS with these variables:
-    // {{to_email}}, {{section}}, {{room_number}}, {{subject}}, {{faculty}}, {{date}}, {{time}}, {{booked_by}}
+    console.log('[EmailJS] Attempting to send with params:', templateParams);
+
     emailjs.send('service_yshtj8r', 'template_wlnzc5i', templateParams)
-      .then(() => console.log('SUCCESS! Email sent to students.'))
-      .catch((error) => console.error('FAILED...', error));
+      .then((res) => console.log('SUCCESS! Email sent:', res))
+      .catch((error) => {
+        console.error('FAILED to send email:', error);
+        alert('Email Notification Failed: ' + JSON.stringify(error));
+      });
     
     const fmtDate = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
     document.getElementById('popup-msg').innerHTML =
