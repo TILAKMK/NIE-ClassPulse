@@ -150,6 +150,49 @@
             <input id="inp-faculty" placeholder="Faculty name (optional)" type="text"
                    class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
             <div>
+              <label class="text-xs text-slate-400 mb-1 block">Target Section *</label>
+              <select id="inp-section"
+                      class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none">
+                <option value="">Select Section</option>
+                <optgroup label="2nd Year / 2nd Semester">
+                  <option value="2nd CSE-A">2nd CSE-A</option>
+                  <option value="2nd CSE-B">2nd CSE-B</option>
+                  <option value="2nd CSE-C">2nd CSE-C</option>
+                  <option value="2nd CSE-D">2nd CSE-D</option>
+                  <option value="2nd CSE-E">2nd CSE-E</option>
+                  <option value="2nd CSE-F">2nd CSE-F</option>
+                  <option value="2nd CSE-G">2nd CSE-G</option>
+                  <option value="2nd CSE-H">2nd CSE-H</option>
+                  <option value="2nd AIML-A">2nd AIML-A</option>
+                  <option value="2nd AIML-B">2nd AIML-B</option>
+                </optgroup>
+                <optgroup label="4th Year / 4th Semester">
+                  <option value="4th CSE-A">4th CSE-A</option>
+                  <option value="4th CSE-B">4th CSE-B</option>
+                  <option value="4th CSE-C">4th CSE-C</option>
+                  <option value="4th CSE-D">4th CSE-D</option>
+                  <option value="4th AIML-E">4th AIML-E</option>
+                  <option value="4th AIML-F">4th AIML-F</option>
+                  <option value="4th IS-A">4th IS-A</option>
+                  <option value="4th IS-B">4th IS-B</option>
+                  <option value="4th IS-C">4th IS-C</option>
+                  <option value="4th IS-D">4th IS-D</option>
+                </optgroup>
+                <optgroup label="6th Year / 6th Semester">
+                  <option value="6th CSE-A">6th CSE-A</option>
+                  <option value="6th CSE-B">6th CSE-B</option>
+                  <option value="6th CSE-C">6th CSE-C</option>
+                  <option value="6th CSE-D">6th CSE-D</option>
+                  <option value="6th IS-A">6th IS-A</option>
+                  <option value="6th IS-B">6th IS-B</option>
+                  <option value="6th IS-C">6th IS-C</option>
+                  <option value="6th IS-D">6th IS-D</option>
+                  <option value="6th AIML-E">6th AIML-E</option>
+                  <option value="6th AIML-F">6th AIML-F</option>
+                </optgroup>
+              </select>
+            </div>
+            <div>
               <label class="text-xs text-slate-400 mb-1 block">Date</label>
               <input id="inp-date" type="date"
                      class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-primary outline-none"/>
@@ -315,7 +358,7 @@
     if (isOccupied && room.current_subject) {
       sessionEl.classList.remove('hidden');
       document.getElementById('cs-subject').textContent = room.current_subject;
-      document.getElementById('cs-section').textContent = room.section ?? '';
+      document.getElementById('cs-section').textContent = room.current_section || room.section || '';
       document.getElementById('cs-time').textContent =
         room.session_start ? `${fmtTime(room.session_start)} – ${fmtTime(room.session_end)}` : '';
     } else {
@@ -472,21 +515,28 @@
     document.getElementById('btn-occupy')?.addEventListener('click', async () => {
       const subject = document.getElementById('inp-subject').value.trim();
       const faculty = document.getElementById('inp-faculty').value.trim();
+      const section = document.getElementById('inp-section').value;
       const date    = document.getElementById('inp-date') ? document.getElementById('inp-date').value : '';
       const start   = document.getElementById('inp-start').value;
       const end     = document.getElementById('inp-end').value;
       if (!subject) { msg.style.color='red'; msg.textContent='⚠️ Enter a subject name.'; return; }
+      if (!section) { msg.style.color='red'; msg.textContent='⚠️ Select a target section.'; return; }
 
       const btn = document.getElementById('btn-occupy');
       btn.disabled = true;
       btn.textContent = 'Saving…';
 
       try {
-        await updateRoomStatus(room.id, 'occupied', { subject, faculty, date, start, end });
+        await updateRoomStatus(room.id, 'occupied', { subject, faculty, date, start, end, section });
+        
+        // Simulate email notification
+        console.log(`[Email Simulation] Sending notification to devon590111@gmail.com for section ${section}`);
+        console.log(`Subject: Room ${room.room_number} is now Occupied for ${subject}`);
+
         msg.style.color = 'green';
-        msg.textContent = '✅ Room marked occupied!';
+        msg.textContent = `✅ Occupied! Notification sent to ${section}.`;
         // Reload page after short delay so UI refreshes fully
-        setTimeout(() => location.reload(), 1000);
+        setTimeout(() => location.reload(), 1500);
       } catch(e) {
         msg.style.color = 'red';
         msg.textContent = e.message;

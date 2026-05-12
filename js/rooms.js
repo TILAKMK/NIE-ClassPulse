@@ -74,6 +74,7 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
   if (status === 'occupied' && sessionInfo) {
     updates.current_subject = sessionInfo.subject || null;
     updates.current_faculty = sessionInfo.faculty || null;
+    updates.current_section = sessionInfo.section || null;
     updates.session_start   = sessionInfo.start ? sessionInfo.start + ':00' : null;
 
     if (sessionInfo.end && sessionInfo.end.length >= 4) {
@@ -113,6 +114,7 @@ export async function updateRoomStatus(roomId, status, sessionInfo = null) {
   } else {
     updates.current_subject = null;
     updates.current_faculty = null;
+    updates.current_section = null;
     updates.session_start   = null;
     updates.session_end     = null;
     updates.manual_override = false;

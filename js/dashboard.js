@@ -176,6 +176,7 @@ function buildRoomCard(room) {
     ? `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-6">
          <p class="text-xs text-slate-500 uppercase font-bold mb-1">Ongoing</p>
          <p class="font-bold text-primary text-sm">${room.current_subject}</p>
+         <p class="text-[10px] text-slate-400 font-medium">${room.current_section || ''}</p>
          ${room.session_start ? `<p class="text-xs text-slate-400 mt-0.5">${fmtTime(room.session_start)} – ${fmtTime(room.session_end)}</p>` : ''}
        </div>`
     : `<div class="space-y-2 mb-6">

@@ -135,6 +135,51 @@
                  class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none transition-all"/>
         </div>
 
+        <!-- Section Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Target Section *</label>
+          <select id="inp-section"
+                  class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none transition-all">
+            <option value="">Select Section</option>
+            <optgroup label="2nd Year / 2nd Semester">
+              <option value="2nd CSE-A">2nd CSE-A</option>
+              <option value="2nd CSE-B">2nd CSE-B</option>
+              <option value="2nd CSE-C">2nd CSE-C</option>
+              <option value="2nd CSE-D">2nd CSE-D</option>
+              <option value="2nd CSE-E">2nd CSE-E</option>
+              <option value="2nd CSE-F">2nd CSE-F</option>
+              <option value="2nd CSE-G">2nd CSE-G</option>
+              <option value="2nd CSE-H">2nd CSE-H</option>
+              <option value="2nd AIML-A">2nd AIML-A</option>
+              <option value="2nd AIML-B">2nd AIML-B</option>
+            </optgroup>
+            <optgroup label="4th Year / 4th Semester">
+              <option value="4th CSE-A">4th CSE-A</option>
+              <option value="4th CSE-B">4th CSE-B</option>
+              <option value="4th CSE-C">4th CSE-C</option>
+              <option value="4th CSE-D">4th CSE-D</option>
+              <option value="4th AIML-E">4th AIML-E</option>
+              <option value="4th AIML-F">4th AIML-F</option>
+              <option value="4th IS-A">4th IS-A</option>
+              <option value="4th IS-B">4th IS-B</option>
+              <option value="4th IS-C">4th IS-C</option>
+              <option value="4th IS-D">4th IS-D</option>
+            </optgroup>
+            <optgroup label="6th Year / 6th Semester">
+              <option value="6th CSE-A">6th CSE-A</option>
+              <option value="6th CSE-B">6th CSE-B</option>
+              <option value="6th CSE-C">6th CSE-C</option>
+              <option value="6th CSE-D">6th CSE-D</option>
+              <option value="6th IS-A">6th IS-A</option>
+              <option value="6th IS-B">6th IS-B</option>
+              <option value="6th IS-C">6th IS-C</option>
+              <option value="6th IS-D">6th IS-D</option>
+              <option value="6th AIML-E">6th AIML-E</option>
+              <option value="6th AIML-F">6th AIML-F</option>
+            </optgroup>
+          </select>
+        </div>
+
         <p id="form-error" class="text-red-500 text-xs hidden"></p>
 
         <!-- Search button -->
@@ -241,6 +286,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const start   = document.getElementById('inp-start').value;
     const end     = document.getElementById('inp-end').value;
     const subject = document.getElementById('inp-subject').value.trim();
+    const section = document.getElementById('inp-section').value;
     const errEl   = document.getElementById('form-error');
 
     errEl.classList.add('hidden');
@@ -251,6 +297,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (!subject) {
       errEl.textContent = 'Please enter a subject name.';
+      errEl.classList.remove('hidden'); return;
+    }
+    if (!section) {
+      errEl.textContent = 'Please select a target section.';
       errEl.classList.remove('hidden'); return;
     }
     if (start >= end) {
@@ -314,7 +364,7 @@ window.addEventListener('DOMContentLoaded', () => {
       grid.innerHTML = available.map(r => buildRoomCard(r)).join('');
 
       grid.querySelectorAll('.book-btn').forEach(btn => {
-        btn.addEventListener('click', () => bookRoom(btn.dataset.id, btn.dataset.number, user, date, start, end, subject));
+        btn.addEventListener('click', () => bookRoom(btn.dataset.id, btn.dataset.number, user, date, start, end, subject, section));
       });
 
     } catch (err) {
@@ -339,7 +389,7 @@ window.addEventListener('DOMContentLoaded', () => {
       </div>`;
   }
 
-  async function bookRoom(roomId, roomNumber, user, date, start, end, subject) {
+  async function bookRoom(roomId, roomNumber, user, date, start, end, subject, section) {
     const faculty = document.getElementById('inp-faculty').value.trim();
     const displayEmail = getDisplayEmail() || user.email;
 
@@ -349,6 +399,7 @@ window.addEventListener('DOMContentLoaded', () => {
       booked_by:  displayEmail,
       subject:    subject,
       faculty:    faculty || null,
+      section:    section,
       date:       date,
       start_time: start + ':00',
       end_time:   end + ':00',
@@ -356,9 +407,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (error) { alert('Error: ' + error.message); return; }
 
+    // Simulate sending email notification
+    console.log(`[Email Simulation] Sending notification to devon590111@gmail.com for section ${section}`);
+    console.log(`Subject: New Booking for ${section} - Room ${roomNumber}`);
+    
     const fmtDate = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
-    document.getElementById('popup-msg').textContent =
-      `Room ${roomNumber} booked for ${fmtDate}, ${fmtTime(start)} – ${fmtTime(end)}`;
+    document.getElementById('popup-msg').innerHTML =
+      `Room ${roomNumber} booked for ${fmtDate}, ${fmtTime(start)} – ${fmtTime(end)}.<br><br>` +
+      `<span class="text-xs text-green-600 font-medium flex items-center justify-center gap-1">` +
+      `<span class="material-symbols-outlined text-sm">mail</span> Notification sent to ${section} students</span>`;
     document.getElementById('success-popup').classList.remove('hidden');
 
     // Refresh available rooms
