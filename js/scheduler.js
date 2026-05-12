@@ -84,7 +84,7 @@ async function syncRoomStatuses() {
   // Step 3 — Fetch active bookings for current time
   const { data: bookings, error: bookErr } = await supabase
     .from('bookings')
-    .select('room_id, subject, faculty, start_time, end_time')
+    .select('room_id, room_number, subject, faculty, start_time, end_time')
     .eq('date', date)
     .lte('start_time', time + ':00')
     .gt('end_time', time + ':00');
@@ -95,9 +95,10 @@ async function syncRoomStatuses() {
   if (activeSlot) {
     const { data, error } = await supabase
       .from('schedules')
-      .select('room_id, subject, start_time, end_time')
+      .select('room_id, room_number, subject, start_time, end_time')
       .eq('day', day)
-      .eq('start_time', activeSlot.start + ':00');
+      .lte('start_time', time + ':00')
+      .gt('end_time', time + ':00');
     if (!error) schedules = data;
   }
 
@@ -109,8 +110,9 @@ async function syncRoomStatuses() {
 
   // Step 5 — update only unlocked rooms
   for (const room of unlocked) {
-    const book  = bookings?.find(b => b.room_id === room.id);
-    const sched = schedules?.find(s => s.room_id === room.id);
+    // Match by room_number to be safe against broken UUID links
+    const book  = bookings?.find(b => b.room_number === room.room_number);
+    const sched = schedules?.find(s => s.room_number === room.room_number);
 
     if (book) {
       // Booking takes precedence

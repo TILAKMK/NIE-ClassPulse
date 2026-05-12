@@ -272,11 +272,11 @@
     return '';
   }
 
-  async function fetchAllSchedules(roomId) {
+  async function fetchAllSchedules(roomNumber) {
     const { data, error } = await supabase
       .from('schedules')
       .select('day, start_time, end_time, subject, section, semester')
-      .eq('room_id', roomId)
+      .eq('room_number', roomNumber)
       .order('start_time');
     if (error) throw error;
     return data;
@@ -344,7 +344,7 @@
 
       const [role, allSchedules] = await Promise.all([
         getUserRole(),
-        fetchAllSchedules(room.id),
+        fetchAllSchedules(room.room_number),
       ]);
 
       document.getElementById('loading').classList.add('hidden');
