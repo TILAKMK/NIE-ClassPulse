@@ -40,6 +40,14 @@
       border-color: #475569;
     }
   </style>
+  <!-- EmailJS Library -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function() {
+      // Replace with your actual Public Key from EmailJS
+      emailjs.init("YOUR_PUBLIC_KEY");
+    })();
+  </script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
 
@@ -407,9 +415,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (error) { alert('Error: ' + error.message); return; }
 
-    // Simulate sending email notification
-    console.log(`[Email Simulation] Sending notification to devon590111@gmail.com for section ${section}`);
-    console.log(`Subject: New Booking for ${section} - Room ${roomNumber}`);
+    // Real email notification using EmailJS
+    const templateParams = {
+      to_email: 'devon590111@gmail.com',
+      section: section,
+      room_number: roomNumber,
+      subject: subject,
+      faculty: faculty || 'Not specified',
+      date: date,
+      time: `${fmtTime(start)} – ${fmtTime(end)}`,
+      booked_by: displayEmail
+    };
+
+    // Note: You need to set up a template in EmailJS with these variables:
+    // {{to_email}}, {{section}}, {{room_number}}, {{subject}}, {{faculty}}, {{date}}, {{time}}, {{booked_by}}
+    emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+      .then(() => console.log('SUCCESS! Email sent to students.'))
+      .catch((error) => console.error('FAILED...', error));
     
     const fmtDate = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
     document.getElementById('popup-msg').innerHTML =

@@ -88,6 +88,14 @@
         color: #111 !important;
     }
   </style>
+  <!-- EmailJS Library -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function() {
+      // Replace with your actual Public Key from EmailJS
+      emailjs.init("YOUR_PUBLIC_KEY");
+    })();
+  </script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors">
 <div class="vignette"></div>
@@ -529,9 +537,21 @@
       try {
         await updateRoomStatus(room.id, 'occupied', { subject, faculty, date, start, end, section });
         
-        // Simulate email notification
-        console.log(`[Email Simulation] Sending notification to devon590111@gmail.com for section ${section}`);
-        console.log(`Subject: Room ${room.room_number} is now Occupied for ${subject}`);
+        // Real email notification using EmailJS
+        const templateParams = {
+          to_email: 'devon590111@gmail.com',
+          section: section,
+          room_number: room.room_number,
+          subject: subject,
+          faculty: faculty || 'Not specified',
+          date: date,
+          time: `${fmtTime(start)} – ${fmtTime(end)}`,
+          booked_by: 'Staff'
+        };
+
+        emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+          .then(() => console.log('SUCCESS! Email sent to students.'))
+          .catch((error) => console.error('FAILED...', error));
 
         msg.style.color = 'green';
         msg.textContent = `✅ Occupied! Notification sent to ${section}.`;
