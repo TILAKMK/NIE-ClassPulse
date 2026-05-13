@@ -9,6 +9,8 @@ export async function getAllRooms() {
     .select('*')
     .order('room_number');
   if (error) throw error;
+  
+  await overlayActiveSchedules(data);
   return data;
 }
 
@@ -32,10 +34,72 @@ export async function getRoomById(id) {
       console.error('[rooms.js] Both ID and room_number lookups failed:', altErr.message);
       throw altErr;
     }
-    return alt;
+    data = alt;
   }
   
+  if (data) await overlayActiveSchedules([data]);
   return data;
+}
+
+// Helper to overlay active timetable/bookings so we don't rely on client-side DB writes
+async function overlayActiveSchedules(roomsArray) {
+  try {
+    const now = new Date();
+    const time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+    const day = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', weekday: 'long' }).format(now);
+    const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('room_number, subject, faculty, start_time, end_time, section')
+      .eq('date', date)
+      .lte('start_time', time + ':00')
+      .gt('end_time', time + ':00');
+
+    const { data: schedules } = await supabase
+      .from('schedules')
+      .select('room_number, subject, start_time, end_time, section')
+      .eq('day', day)
+      .lte('start_time', time + ':00')
+      .gt('end_time', time + ':00');
+
+    roomsArray.forEach(room => {
+      let isLocked = false;
+      if (room.manual_override && room.manual_override_until) {
+        if (new Date().toISOString() < room.manual_override_until) isLocked = true;
+      }
+      
+      if (!isLocked) {
+        const book = bookings?.find(b => b.room_number === room.room_number);
+        const sched = schedules?.find(s => s.room_number === room.room_number);
+        
+        if (book) {
+          room.status = 'occupied';
+          room.current_subject = book.subject;
+          room.current_faculty = book.faculty;
+          room.current_section = book.section || null;
+          room.session_start = book.start_time;
+          room.session_end = book.end_time;
+        } else if (sched && !/lab/i.test(sched.subject || '')) {
+          room.status = 'occupied';
+          room.current_subject = sched.subject;
+          room.current_faculty = null;
+          room.current_section = sched.section || null;
+          room.session_start = sched.start_time;
+          room.session_end = sched.end_time;
+        } else {
+          room.status = 'vacant';
+          room.current_subject = null;
+          room.current_faculty = null;
+          room.current_section = null;
+          room.session_start = null;
+          room.session_end = null;
+        }
+      }
+    });
+  } catch (err) {
+    console.error('[rooms.js] Error overlaying schedules:', err);
+  }
 }
 
 export async function getRoomStats() {
@@ -43,6 +107,9 @@ export async function getRoomStats() {
     .from('classrooms')
     .select('*');
   if (error) throw error;
+  
+  // Apply dynamic overlays so we have the true session_start and session_end
+  await overlayActiveSchedules(data);
   
   // Apply time-based status logic to calculate actual occupied/vacant counts
   // This must match the logic used in room cards (getActualRoomStatus)
