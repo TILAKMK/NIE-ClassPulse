@@ -89,18 +89,15 @@ async function syncRoomStatuses() {
     .lte('start_time', time + ':00')
     .gt('end_time', time + ':00');
 
-  // Step 4 — Fetch active timetable slot if exists
-  const activeSlot = SLOTS.find(s => time >= s.start && time < s.end);
+  // Step 4 — Fetch active timetable schedules matching the current time
   let schedules = [];
-  if (activeSlot) {
-    const { data, error } = await supabase
-      .from('schedules')
-      .select('room_id, room_number, subject, start_time, end_time')
-      .eq('day', day)
-      .lte('start_time', time + ':00')
-      .gt('end_time', time + ':00');
-    if (!error) schedules = data;
-  }
+  const { data, error } = await supabase
+    .from('schedules')
+    .select('room_id, room_number, subject, start_time, end_time')
+    .eq('day', day)
+    .lte('start_time', time + ':00')
+    .gt('end_time', time + ':00');
+  if (!error) schedules = data;
 
   if (bookErr) {
     console.error('[Scheduler] Booking fetch failed:', bookErr.message);
@@ -116,34 +113,40 @@ async function syncRoomStatuses() {
 
     if (book) {
       // Booking takes precedence
-      await supabase.from('classrooms').update({
+      const { error: err } = await supabase.from('classrooms').update({
         status:          'occupied',
         current_subject: book.subject,
         current_faculty: book.faculty,
+        current_section: book.section || null,
         session_start:   book.start_time,
         session_end:     book.end_time,
         updated_at:      new Date().toISOString(),
       }).eq('id', room.id);
+      if (err) console.error(`[Scheduler] Update failed for ${room.room_number}:`, err.message);
     } else if (sched && !isLab(sched.subject)) {
       // Timetable class exists → occupied
-      await supabase.from('classrooms').update({
+      const { error: err } = await supabase.from('classrooms').update({
         status:          'occupied',
         current_subject: sched.subject,
         current_faculty: null,
+        current_section: sched.section || null,
         session_start:   sched.start_time,
         session_end:     sched.end_time,
         updated_at:      new Date().toISOString(),
       }).eq('id', room.id);
+      if (err) console.error(`[Scheduler] Update failed for ${room.room_number}:`, err.message);
     } else {
       // No class or lab OR between slots OR off hours → vacant
-      await supabase.from('classrooms').update({
+      const { error: err } = await supabase.from('classrooms').update({
         status:          'vacant',
         current_subject: null,
         current_faculty: null,
+        current_section: null,
         session_start:   null,
         session_end:     null,
         updated_at:      new Date().toISOString(),
       }).eq('id', room.id);
+      if (err) console.error(`[Scheduler] Update failed for ${room.room_number}:`, err.message);
     }
   }
 
