@@ -415,8 +415,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (error) { alert('Error: ' + error.message); return; }
 
-    const user = await getUser();
-    const currentDisplayEmail = getDisplayEmail() || (user ? user.email : 'Unknown Staff');
+    const currentDisplayEmail = getDisplayEmail() || user.email;
     
     // Real email notification using EmailJS
     const templateParams = {
