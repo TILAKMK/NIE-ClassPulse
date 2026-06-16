@@ -30,7 +30,7 @@
 <ul>
   <li>🚶 Walking floor → floor to find empty class</li>
   <li>😐 Opening random doors and getting stared at</li>
-  <li>⏱ Wasting 10–15 mins before every class</li>
+  <li>⏱ Wasting 10–15 mins before every class</li> 
 </ul>
 
 <p><b>👉 ClassPulse fixes this.</b></p>
